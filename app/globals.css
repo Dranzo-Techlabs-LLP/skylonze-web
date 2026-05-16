@@ -12,17 +12,55 @@
 }
 
 * { -webkit-tap-highlight-color: transparent; }
-html, body { background: var(--bg-900); color: #F5F0FF; }
+
+/* Stop iOS Safari horizontal rubber-band / overscroll bounce.
+   `overflow-x: clip` is stricter than `hidden` — it prevents the
+   element from becoming a horizontal scroll container at all, which
+   `hidden` does not guarantee on iOS. `overscroll-behavior` kills
+   the elastic bounce. `touch-action: pan-y` blocks horizontal
+   gestures at root; children with their own horizontal scrolling
+   (e.g. category pill bar) override with `touch-action: pan-x`. */
+html {
+  background: var(--bg-900);
+  color: #F5F0FF;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  width: 100%;
+  max-width: 100vw;
+}
 body {
   font-family: var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
+  background: var(--bg-900);
+  color: #F5F0FF;
   background-image:
     radial-gradient(900px 600px at 80% -10%, rgba(168,123,255,0.25), transparent 60%),
     radial-gradient(700px 500px at 0% 110%, rgba(255,123,213,0.18), transparent 60%),
     radial-gradient(600px 400px at 50% 50%, rgba(123,234,255,0.06), transparent 70%);
   background-attachment: fixed;
   min-height: 100dvh;
-  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Fallback for browsers without overflow:clip (Safari < 16) */
+@supports not (overflow: clip) {
+  html, body { overflow-x: hidden; }
+}
+
+/* Main wrapper also clipped so inner abs-positioned glows don't leak */
+main { overflow-x: clip; max-width: 100vw; }
+
+/* Re-enable horizontal panning where children genuinely need it
+   (e.g. horizontal scroll rails, category pill bar) */
+.overflow-x-auto,
+.overflow-x-scroll {
+  touch-action: pan-x pan-y;
 }
 
 ::selection { background: rgba(168,123,255,0.45); color: white; }

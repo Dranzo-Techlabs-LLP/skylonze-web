@@ -49,6 +49,7 @@ const SCHEMA = [
     potential_payout BIGINT NOT NULL,
     status ENUM('open','won','lost') NOT NULL DEFAULT 'open',
     settled_at TIMESTAMP NULL DEFAULT NULL,
+    paid_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pred_user (user_id),
     INDEX idx_pred_market (market_id),
@@ -63,6 +64,8 @@ const SCHEMA = [
     won_count INT NOT NULL DEFAULT 0,
     lost_count INT NOT NULL DEFAULT 0,
     paid_out BIGINT NOT NULL DEFAULT 0,
+    distributed TINYINT NOT NULL DEFAULT 0,
+    distributed_at TIMESTAMP NULL DEFAULT NULL,
     resolved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 ];
@@ -70,6 +73,9 @@ const SCHEMA = [
 // Idempotent column adds (MySQL has no ADD COLUMN IF NOT EXISTS).
 const COLUMN_ADDS = [
   { table: "predictions", column: "settled_at", ddl: "ALTER TABLE predictions ADD COLUMN settled_at TIMESTAMP NULL DEFAULT NULL" },
+  { table: "predictions", column: "paid_at", ddl: "ALTER TABLE predictions ADD COLUMN paid_at TIMESTAMP NULL DEFAULT NULL" },
+  { table: "market_resolutions", column: "distributed", ddl: "ALTER TABLE market_resolutions ADD COLUMN distributed TINYINT NOT NULL DEFAULT 0" },
+  { table: "market_resolutions", column: "distributed_at", ddl: "ALTER TABLE market_resolutions ADD COLUMN distributed_at TIMESTAMP NULL DEFAULT NULL" },
 ];
 
 const c = await mysql.createConnection({

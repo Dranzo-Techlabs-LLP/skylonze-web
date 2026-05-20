@@ -25,7 +25,14 @@ type AdminMarket = {
   closes: string;
   open: number;
   staked: number;
-  resolution: { outcome: "YES" | "NO"; won_count: number; lost_count: number; paid_out: number } | null;
+  resolution: {
+    outcome: "YES" | "NO";
+    won_count: number;
+    lost_count: number;
+    paid_out: number;
+    distributed: number;
+  } | null;
+  pending: { count: number; total: number };
 };
 
 export default function AdminDashboard() {
@@ -38,7 +45,7 @@ export default function AdminDashboard() {
   const [adj, setAdj] = useState({ amount: "", note: "" });
   const [note, setNote] = useState<{ k: "ok" | "err"; m: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [resolveTarget, setResolveTarget] = useState<AdminMarket | null>(null);
+  const [revealTarget, setRevealTarget] = useState<AdminMarket | null>(null);
   const router = useRouter();
 
   async function loadUsers(search = "") {
@@ -83,15 +90,27 @@ export default function AdminDashboard() {
     finally { setBusy(false); }
   }
 
-  async function resolve(outcome: "YES" | "NO") {
-    if (!resolveTarget) return;
+  async function reveal(outcome: "YES" | "NO") {
+    if (!revealTarget) return;
     setBusy(true); setNote(null);
     try {
-      const r = await apiSend<{ won: number; lost: number; paid: number }>(
-        "/api/admin/markets/resolve", "POST", { marketId: resolveTarget.id, outcome },
+      const r = await apiSend<{ won: number; lost: number; pending: number }>(
+        "/api/admin/markets/reveal", "POST", { marketId: revealTarget.id, outcome },
       );
-      setNote({ k: "ok", m: `Resolved ${resolveTarget.title} → ${outcome}. ${r.won} won, ${r.lost} lost, ${formatSky(r.paid)} paid.` });
-      setResolveTarget(null);
+      setNote({ k: "ok", m: `Result set: ${revealTarget.title} → ${outcome}. ${r.won} won, ${r.lost} lost. ${formatSky(r.pending)} SKY pending payout.` });
+      setRevealTarget(null);
+      await loadMarkets();
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+
+  async function distribute(m: AdminMarket) {
+    setBusy(true); setNote(null);
+    try {
+      const r = await apiSend<{ winners: number; paid: number }>(
+        "/api/admin/markets/distribute", "POST", { marketId: m.id },
+      );
+      setNote({ k: "ok", m: `Distributed ${formatSky(r.paid)} SKY to ${r.winners} winner(s) on ${m.title}.` });
       await loadMarkets();
     } catch (err: any) { setNote({ k: "err", m: err.message }); }
     finally { setBusy(false); }
@@ -203,10 +222,10 @@ export default function AdminDashboard() {
         ) : (
           <div className="glass rounded-3xl overflow-hidden">
             <div className="hidden md:grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-ink-400 border-b border-violet-400/15">
-              <span className="col-span-5">Market</span>
+              <span className="col-span-4">Market</span>
               <span className="col-span-2 text-right">Open bets</span>
               <span className="col-span-2 text-right">Staked</span>
-              <span className="col-span-3 text-right">Resolve</span>
+              <span className="col-span-4 text-right">Result / Payout</span>
             </div>
             {loading ? (
               <div className="p-10 text-center text-ink-400 text-sm">Loading…</div>
@@ -214,7 +233,7 @@ export default function AdminDashboard() {
               <ul className="divide-y divide-violet-400/10">
                 {markets.map((m) => (
                   <li key={m.id} className="grid grid-cols-1 md:grid-cols-12 items-center gap-3 px-5 py-4">
-                    <div className="md:col-span-5 min-w-0">
+                    <div className="md:col-span-4 min-w-0">
                       <p className="truncate text-sm font-medium">{m.title}</p>
                       <p className="truncate text-[11px] text-ink-400">{m.category} · closes {m.closes} · YES {m.yes}%</p>
                     </div>
@@ -224,15 +243,27 @@ export default function AdminDashboard() {
                     <span className="md:col-span-2 md:text-right text-xs tabular inline-flex items-center md:justify-end gap-1">
                       <SkyCoin size={12} /> {formatSky(m.staked)}
                     </span>
-                    <div className="md:col-span-3 flex md:justify-end gap-2">
-                      {m.resolution ? (
-                        <Badge tone={m.resolution.outcome === "YES" ? "success" : "danger"}>
-                          Resolved · {m.resolution.outcome}
-                        </Badge>
-                      ) : (
-                        <Button size="sm" variant="secondary" onClick={() => { setResolveTarget(m); setNote(null); }}>
-                          <Gavel className="h-4 w-4" /> Resolve
+                    <div className="md:col-span-4 flex flex-wrap items-center md:justify-end gap-2">
+                      {!m.resolution ? (
+                        <Button size="sm" variant="secondary" onClick={() => { setRevealTarget(m); setNote(null); }}>
+                          <Gavel className="h-4 w-4" /> Set result
                         </Button>
+                      ) : m.resolution.distributed ? (
+                        <>
+                          <Badge tone={m.resolution.outcome === "YES" ? "success" : "danger"}>
+                            Result · {m.resolution.outcome}
+                          </Badge>
+                          <Badge tone="violet" className="gap-1"><Check className="h-3 w-3" /> Paid {formatSky(m.resolution.paid_out)}</Badge>
+                        </>
+                      ) : (
+                        <>
+                          <Badge tone={m.resolution.outcome === "YES" ? "success" : "danger"}>
+                            Result · {m.resolution.outcome}
+                          </Badge>
+                          <Button size="sm" disabled={busy} onClick={() => distribute(m)}>
+                            <Coins className="h-4 w-4" /> Distribute {m.pending.count > 0 ? `${m.pending.count} · ${formatSky(m.pending.total)}` : ""}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </li>
@@ -296,29 +327,30 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Resolve market modal */}
-      {resolveTarget && (
+      {/* Reveal result modal */}
+      {revealTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setResolveTarget(null)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRevealTarget(null)} />
           <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             className="relative w-full max-w-md glass-strong rounded-3xl p-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold">Resolve market</h3>
-              <button onClick={() => setResolveTarget(null)} className="rounded-lg p-1.5 hover:bg-white/5" aria-label="Close"><X className="h-5 w-5" /></button>
+              <h3 className="font-display text-lg font-bold">Set market result</h3>
+              <button onClick={() => setRevealTarget(null)} className="rounded-lg p-1.5 hover:bg-white/5" aria-label="Close"><X className="h-5 w-5" /></button>
             </div>
-            <p className="mt-2 text-sm text-ink-200">{resolveTarget.title}</p>
+            <p className="mt-2 text-sm text-ink-200">{revealTarget.title}</p>
             <p className="mt-1 text-xs text-ink-400">
-              {resolveTarget.open} open prediction(s) · {formatSky(resolveTarget.staked)} SKY staked.
-              Winners are paid their potential payout; this cannot be undone.
+              {revealTarget.open} open prediction(s) · {formatSky(revealTarget.staked)} SKY staked.
+              Setting the result marks winners and losers. You then distribute the
+              winnings in a second step. This cannot be undone.
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <Button variant="secondary" disabled={busy} className="border-success/50 text-success"
-                onClick={() => resolve("YES")}>
-                <TrendingUp className="h-4 w-4" /> Resolve YES
+                onClick={() => reveal("YES")}>
+                <TrendingUp className="h-4 w-4" /> Result: YES
               </Button>
               <Button variant="secondary" disabled={busy} className="border-danger/50 text-danger"
-                onClick={() => resolve("NO")}>
-                <Gavel className="h-4 w-4" /> Resolve NO
+                onClick={() => reveal("NO")}>
+                <Gavel className="h-4 w-4" /> Result: NO
               </Button>
             </div>
           </motion.div>

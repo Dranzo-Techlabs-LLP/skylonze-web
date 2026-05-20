@@ -87,6 +87,8 @@ export type Resolution = {
   won_count: number;
   lost_count: number;
   paid_out: number;
+  distributed: number;
+  distributed_at: string | null;
   resolved_at: string;
 };
 
@@ -99,13 +101,22 @@ export async function listResolutions(): Promise<Resolution[]> {
   return query<Resolution>("SELECT * FROM market_resolutions");
 }
 
+/** Pending (unpaid) winnings for a resolved market: count + SKY total. */
+export async function pendingPayout(marketId: string) {
+  const rows = await query<{ c: number; total: number }>(
+    "SELECT COUNT(*) c, COALESCE(SUM(potential_payout),0) total FROM predictions WHERE market_id=? AND status='won' AND paid_at IS NULL",
+    [marketId],
+  );
+  const r = rows[0] ?? { c: 0, total: 0 };
+  return { count: Number(r.c), total: Number(r.total) };
+}
+
 /**
- * Resolve a market to an outcome. Settles all OPEN predictions:
- * winners (side === outcome) get credited their potential_payout; losers are
- * marked lost (stake was already debited at placement). Idempotent-guarded:
- * throws if the market was already resolved.
+ * Step 1 — Reveal/set the result. Marks every OPEN prediction won/lost
+ * (winners' payouts are NOT credited yet) and records the resolution.
+ * Guarded against double-reveal.
  */
-export async function resolveMarket(marketId: string, outcome: "YES" | "NO", adminId: number) {
+export async function revealMarket(marketId: string, outcome: "YES" | "NO", adminId: number) {
   const market = markets.find((m) => m.id === marketId);
   if (!market) throw new Error("Market not found.");
   if (outcome !== "YES" && outcome !== "NO") throw new Error("Invalid outcome.");
@@ -115,27 +126,18 @@ export async function resolveMarket(marketId: string, outcome: "YES" | "NO", adm
     await conn.beginTransaction();
 
     const [existing]: any = await conn.query("SELECT market_id FROM market_resolutions WHERE market_id=? FOR UPDATE", [marketId]);
-    if (existing.length) throw new Error("Market already resolved.");
+    if (existing.length) throw new Error("Market result already set.");
 
     const [open]: any = await conn.query(
-      "SELECT id, user_id, side, stake, potential_payout FROM predictions WHERE market_id=? AND status='open' FOR UPDATE",
+      "SELECT id, side, potential_payout FROM predictions WHERE market_id=? AND status='open' FOR UPDATE",
       [marketId],
     );
 
-    let won = 0, lost = 0, paid = 0;
+    let won = 0, lost = 0, pending = 0;
     for (const p of open) {
       if (p.side === outcome) {
-        // winner: credit payout
-        const [u]: any = await conn.query("SELECT sky_balance FROM users WHERE id=? FOR UPDATE", [p.user_id]);
-        const bal = Number(u[0].sky_balance);
-        const next = bal + Number(p.potential_payout);
-        await conn.query("UPDATE users SET sky_balance=? WHERE id=?", [next, p.user_id]);
-        await conn.query(
-          "INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)",
-          [p.user_id, "credit", p.potential_payout, next, `Payout · ${market.title} (${outcome})`],
-        );
         await conn.query("UPDATE predictions SET status='won', settled_at=NOW() WHERE id=?", [p.id]);
-        won++; paid += Number(p.potential_payout);
+        won++; pending += Number(p.potential_payout);
       } else {
         await conn.query("UPDATE predictions SET status='lost', settled_at=NOW() WHERE id=?", [p.id]);
         lost++;
@@ -143,11 +145,61 @@ export async function resolveMarket(marketId: string, outcome: "YES" | "NO", adm
     }
 
     await conn.query(
-      "INSERT INTO market_resolutions (market_id, outcome, resolved_by, won_count, lost_count, paid_out) VALUES (?,?,?,?,?,?)",
-      [marketId, outcome, adminId, won, lost, paid],
+      "INSERT INTO market_resolutions (market_id, outcome, resolved_by, won_count, lost_count, paid_out, distributed) VALUES (?,?,?,?,?,?,0)",
+      [marketId, outcome, adminId, won, lost, 0],
     );
     await conn.commit();
-    return { won, lost, paid, settled: open.length };
+    return { won, lost, pending, settled: open.length };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * Step 2 — Distribute winnings. Credits each WON, unpaid prediction its
+ * potential_payout (+ wallet transaction), stamps paid_at, and flags the
+ * resolution distributed. Idempotent: only pays predictions not yet paid.
+ */
+export async function distributeMarket(marketId: string) {
+  const market = markets.find((m) => m.id === marketId);
+  if (!market) throw new Error("Market not found.");
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [res]: any = await conn.query("SELECT outcome, distributed FROM market_resolutions WHERE market_id=? FOR UPDATE", [marketId]);
+    if (!res.length) throw new Error("Set the result first.");
+    if (res[0].distributed) throw new Error("Winnings already distributed.");
+    const outcome = res[0].outcome as "YES" | "NO";
+
+    const [winners]: any = await conn.query(
+      "SELECT id, user_id, potential_payout FROM predictions WHERE market_id=? AND status='won' AND paid_at IS NULL FOR UPDATE",
+      [marketId],
+    );
+
+    let paid = 0;
+    for (const p of winners) {
+      const [u]: any = await conn.query("SELECT sky_balance FROM users WHERE id=? FOR UPDATE", [p.user_id]);
+      const next = Number(u[0].sky_balance) + Number(p.potential_payout);
+      await conn.query("UPDATE users SET sky_balance=? WHERE id=?", [next, p.user_id]);
+      await conn.query(
+        "INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)",
+        [p.user_id, "credit", p.potential_payout, next, `Payout · ${market.title} (${outcome})`],
+      );
+      await conn.query("UPDATE predictions SET paid_at=NOW() WHERE id=?", [p.id]);
+      paid += Number(p.potential_payout);
+    }
+
+    await conn.query(
+      "UPDATE market_resolutions SET distributed=1, distributed_at=NOW(), paid_out=? WHERE market_id=?",
+      [paid, marketId],
+    );
+    await conn.commit();
+    return { winners: winners.length, paid };
   } catch (e) {
     await conn.rollback();
     throw e;

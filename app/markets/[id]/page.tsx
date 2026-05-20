@@ -10,15 +10,19 @@ import { SkyCoin } from "@/components/SkyCoin";
 import { Avatar } from "@/components/Avatar";
 import { formatSky } from "@/lib/utils";
 import { leaderboard } from "@/lib/data";
+import { getResolution } from "@/lib/predictions";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return markets.map((m) => ({ id: m.id }));
 }
 
-export default function MarketDetail({ params }: { params: { id: string } }) {
+export default async function MarketDetail({ params }: { params: { id: string } }) {
   const m = markets.find((x) => x.id === params.id);
   if (!m) return notFound();
 
+  const resolution = await getResolution(m.id);
   const recent = leaderboard.slice(0, 6);
 
   return (
@@ -35,7 +39,12 @@ export default function MarketDetail({ params }: { params: { id: string } }) {
           </Link>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Badge tone="violet">{m.category}</Badge>
-            {m.hot && (
+            {resolution && (
+              <Badge tone={resolution.outcome === "YES" ? "success" : "danger"}>
+                Resolved · {resolution.outcome}
+              </Badge>
+            )}
+            {m.hot && !resolution && (
               <Badge tone="pink" className="gap-1">
                 <Flame className="h-3 w-3" /> Trending
               </Badge>
@@ -123,7 +132,7 @@ export default function MarketDetail({ params }: { params: { id: string } }) {
         </div>
 
         <div className="lg:sticky lg:top-24 h-fit">
-          <PredictionPanel yes={m.yes} marketId={m.id} />
+          <PredictionPanel yes={m.yes} marketId={m.id} resolvedOutcome={resolution?.outcome ?? null} />
         </div>
       </section>
     </>

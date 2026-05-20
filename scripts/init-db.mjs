@@ -48,11 +48,28 @@ const SCHEMA = [
     entry_prob INT NOT NULL,
     potential_payout BIGINT NOT NULL,
     status ENUM('open','won','lost') NOT NULL DEFAULT 'open',
+    settled_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pred_user (user_id),
     INDEX idx_pred_market (market_id),
+    INDEX idx_pred_status (status),
     CONSTRAINT fk_pred_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+  `CREATE TABLE IF NOT EXISTS market_resolutions (
+    market_id VARCHAR(64) PRIMARY KEY,
+    outcome ENUM('YES','NO') NOT NULL,
+    resolved_by INT NULL,
+    won_count INT NOT NULL DEFAULT 0,
+    lost_count INT NOT NULL DEFAULT 0,
+    paid_out BIGINT NOT NULL DEFAULT 0,
+    resolved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+];
+
+// Idempotent column adds (MySQL has no ADD COLUMN IF NOT EXISTS).
+const COLUMN_ADDS = [
+  { table: "predictions", column: "settled_at", ddl: "ALTER TABLE predictions ADD COLUMN settled_at TIMESTAMP NULL DEFAULT NULL" },
 ];
 
 const c = await mysql.createConnection({
@@ -62,6 +79,13 @@ const c = await mysql.createConnection({
 
 console.log("Connected. Creating tables…");
 for (const s of SCHEMA) await c.query(s);
+for (const a of COLUMN_ADDS) {
+  const [col] = await c.query(
+    "SELECT COUNT(*) n FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?",
+    [DB_NAME, a.table, a.column],
+  );
+  if (col[0].n === 0) { await c.query(a.ddl); console.log(`Added column ${a.table}.${a.column}`); }
+}
 
 // Seed admin
 const [rows] = await c.query("SELECT id FROM users WHERE email=?", [ADMIN_EMAIL]);

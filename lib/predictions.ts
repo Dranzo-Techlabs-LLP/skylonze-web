@@ -80,3 +80,88 @@ export async function predictionSummary(userId: number) {
   const r = rows[0] ?? { c: 0, staked: 0, payout: 0 };
   return { open: Number(r.c), staked: Number(r.staked), potential: Number(r.payout) };
 }
+
+export type Resolution = {
+  market_id: string;
+  outcome: "YES" | "NO";
+  won_count: number;
+  lost_count: number;
+  paid_out: number;
+  resolved_at: string;
+};
+
+export async function getResolution(marketId: string): Promise<Resolution | null> {
+  const rows = await query<Resolution>("SELECT * FROM market_resolutions WHERE market_id=?", [marketId]);
+  return rows[0] ?? null;
+}
+
+export async function listResolutions(): Promise<Resolution[]> {
+  return query<Resolution>("SELECT * FROM market_resolutions");
+}
+
+/**
+ * Resolve a market to an outcome. Settles all OPEN predictions:
+ * winners (side === outcome) get credited their potential_payout; losers are
+ * marked lost (stake was already debited at placement). Idempotent-guarded:
+ * throws if the market was already resolved.
+ */
+export async function resolveMarket(marketId: string, outcome: "YES" | "NO", adminId: number) {
+  const market = markets.find((m) => m.id === marketId);
+  if (!market) throw new Error("Market not found.");
+  if (outcome !== "YES" && outcome !== "NO") throw new Error("Invalid outcome.");
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [existing]: any = await conn.query("SELECT market_id FROM market_resolutions WHERE market_id=? FOR UPDATE", [marketId]);
+    if (existing.length) throw new Error("Market already resolved.");
+
+    const [open]: any = await conn.query(
+      "SELECT id, user_id, side, stake, potential_payout FROM predictions WHERE market_id=? AND status='open' FOR UPDATE",
+      [marketId],
+    );
+
+    let won = 0, lost = 0, paid = 0;
+    for (const p of open) {
+      if (p.side === outcome) {
+        // winner: credit payout
+        const [u]: any = await conn.query("SELECT sky_balance FROM users WHERE id=? FOR UPDATE", [p.user_id]);
+        const bal = Number(u[0].sky_balance);
+        const next = bal + Number(p.potential_payout);
+        await conn.query("UPDATE users SET sky_balance=? WHERE id=?", [next, p.user_id]);
+        await conn.query(
+          "INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)",
+          [p.user_id, "credit", p.potential_payout, next, `Payout · ${market.title} (${outcome})`],
+        );
+        await conn.query("UPDATE predictions SET status='won', settled_at=NOW() WHERE id=?", [p.id]);
+        won++; paid += Number(p.potential_payout);
+      } else {
+        await conn.query("UPDATE predictions SET status='lost', settled_at=NOW() WHERE id=?", [p.id]);
+        lost++;
+      }
+    }
+
+    await conn.query(
+      "INSERT INTO market_resolutions (market_id, outcome, resolved_by, won_count, lost_count, paid_out) VALUES (?,?,?,?,?,?)",
+      [marketId, outcome, adminId, won, lost, paid],
+    );
+    await conn.commit();
+    return { won, lost, paid, settled: open.length };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+/** Per-market open prediction counts (for admin market list). */
+export async function openCountsByMarket(): Promise<Record<string, { open: number; staked: number }>> {
+  const rows = await query<{ market_id: string; c: number; staked: number }>(
+    "SELECT market_id, COUNT(*) c, COALESCE(SUM(stake),0) staked FROM predictions WHERE status='open' GROUP BY market_id",
+  );
+  const map: Record<string, { open: number; staked: number }> = {};
+  for (const r of rows) map[r.market_id] = { open: Number(r.c), staked: Number(r.staked) };
+  return map;
+}

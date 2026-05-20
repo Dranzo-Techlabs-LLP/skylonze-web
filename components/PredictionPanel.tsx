@@ -3,14 +3,22 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronUp, ChevronDown, Check, Lock, AlertCircle } from "lucide-react";
+import { ChevronUp, ChevronDown, Check, Lock, AlertCircle, Gavel } from "lucide-react";
 import { Button } from "./Button";
 import { SkyCoin } from "./SkyCoin";
 import { useAuth } from "./AuthProvider";
 import { apiSend } from "@/lib/client";
 import { cn, formatSky } from "@/lib/utils";
 
-export function PredictionPanel({ yes, marketId }: { yes: number; marketId: string }) {
+export function PredictionPanel({
+  yes,
+  marketId,
+  resolvedOutcome = null,
+}: {
+  yes: number;
+  marketId: string;
+  resolvedOutcome?: "YES" | "NO" | null;
+}) {
   const { user, refresh } = useAuth();
   const router = useRouter();
   const [side, setSide] = useState<"YES" | "NO">("YES");
@@ -39,6 +47,25 @@ export function PredictionPanel({ yes, marketId }: { yes: number; marketId: stri
     } finally {
       setBusy(false);
     }
+  }
+
+  // Market already resolved: no more predictions
+  if (resolvedOutcome) {
+    return (
+      <div className="glass-strong rounded-3xl p-6 text-center">
+        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-400/30 bg-violet-500/10">
+          <Gavel className="h-5 w-5 text-violet-300" />
+        </span>
+        <p className="text-xs uppercase tracking-[0.18em] text-violet-300">Market resolved</p>
+        <h3 className="mt-2 font-display text-2xl font-bold">
+          Outcome:{" "}
+          <span className={resolvedOutcome === "YES" ? "text-success" : "text-danger"}>{resolvedOutcome}</span>
+        </h3>
+        <p className="mt-2 text-sm text-ink-300">
+          This market is settled. Winning predictions have been paid out in SKY-3030.
+        </p>
+      </div>
+    );
   }
 
   // Logged-out: gate the action

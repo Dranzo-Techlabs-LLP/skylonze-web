@@ -1,94 +1,88 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, User, Lock, AtSign, ChevronRight } from "lucide-react";
+import { Mail, User, Lock, AtSign, ChevronRight, AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/AuthShell";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { apiSend } from "@/lib/client";
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", handle: "", email: "", password: "" });
-  const [submitted, setSubmitted] = useState(false);
+  const [agree, setAgree] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+  const router = useRouter();
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!agree) { setError("Please accept the terms to continue."); return; }
+    setBusy(true);
+    try {
+      await apiSend("/api/auth/signup", "POST", form);
+      setOk(true);
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
 
   return (
     <AuthShell
       title={<>Create your <span className="text-gradient">SKYLONZE</span> profile</>}
       subtitle="Get 5,000 SKY-3030 to start forecasting in seconds."
     >
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitted(true);
-        }}
-      >
+      <form className="space-y-4" onSubmit={submit}>
         <Input
-          label="Full name"
-          name="name"
-          autoComplete="name"
-          required
+          label="Full name" name="name" autoComplete="name" required
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          startSlot={<User className="h-4 w-4" />}
-          placeholder="Aria Forecaster"
+          startSlot={<User className="h-4 w-4" />} placeholder="Aria Forecaster"
         />
         <Input
-          label="Handle"
-          name="handle"
-          required
+          label="Handle" name="handle" required
           value={form.handle}
           onChange={(e) => setForm({ ...form, handle: e.target.value.replace(/\s+/g, "") })}
-          startSlot={<AtSign className="h-4 w-4" />}
-          placeholder="aria.sky"
-          hint="Lowercase, no spaces"
+          startSlot={<AtSign className="h-4 w-4" />} placeholder="aria.sky"
+          hint="3-30 chars: a-z 0-9 . _ -"
         />
         <Input
-          label="Email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
+          label="Email" type="email" name="email" autoComplete="email" required
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          startSlot={<Mail className="h-4 w-4" />}
-          placeholder="you@skylonze.com"
+          startSlot={<Mail className="h-4 w-4" />} placeholder="you@skylonze.com"
         />
         <Input
-          label="Password"
-          type="password"
-          name="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
+          label="Password" type="password" name="password" autoComplete="new-password"
+          required minLength={8}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          startSlot={<Lock className="h-4 w-4" />}
-          placeholder="At least 8 characters"
+          startSlot={<Lock className="h-4 w-4" />} placeholder="Min 8 chars, letters + numbers"
         />
         <label className="flex items-start gap-2 text-[11px] text-ink-300">
-          <input type="checkbox" required className="mt-0.5 accent-violet-500" />
-          <span>
-            I agree to the SKYLONZE terms and acknowledge SKY-3030 is a virtual ecosystem currency.
-          </span>
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 accent-violet-500" />
+          <span>I agree to the SKYLONZE terms and acknowledge SKY-3030 is a virtual ecosystem currency.</span>
         </label>
-        <Button type="submit" size="lg" className="w-full">
-          Claim 5,000 SKY <ChevronRight className="h-4 w-4" />
-        </Button>
-        {submitted && (
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-xs text-success"
-          >
-            Profile created! Redirecting to your dashboard…
+
+        {error && (
+          <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} role="alert"
+            className="flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+            <AlertCircle className="h-4 w-4 shrink-0" /> {error}
           </motion.p>
         )}
+
+        <Button type="submit" size="lg" className="w-full" disabled={busy}>
+          {busy ? "Creating…" : ok ? "Redirecting…" : <>Claim 5,000 SKY <ChevronRight className="h-4 w-4" /></>}
+        </Button>
         <p className="text-center text-xs text-ink-400">
           Already have an account?{" "}
-          <Link href="/login" className="text-violet-300 hover:text-white">
-            Sign in
-          </Link>
+          <Link href="/login" className="text-violet-300 hover:text-white">Sign in</Link>
         </p>
       </form>
     </AuthShell>

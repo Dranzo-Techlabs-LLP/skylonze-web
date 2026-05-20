@@ -123,7 +123,7 @@ export default function MarketDetail({ params }: { params: { id: string } }) {
         </div>
 
         <div className="lg:sticky lg:top-24 h-fit">
-          <PredictionPanel yes={m.yes} />
+          <PredictionPanel yes={m.yes} marketId={m.id} />
         </div>
       </section>
     </>

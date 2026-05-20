@@ -36,6 +36,23 @@ const SCHEMA = [
     INDEX idx_user (user_id),
     CONSTRAINT fk_tx_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+  `CREATE TABLE IF NOT EXISTS predictions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    market_id VARCHAR(64) NOT NULL,
+    market_title VARCHAR(190) NOT NULL,
+    category VARCHAR(40) NOT NULL,
+    side ENUM('YES','NO') NOT NULL,
+    stake BIGINT NOT NULL,
+    entry_prob INT NOT NULL,
+    potential_payout BIGINT NOT NULL,
+    status ENUM('open','won','lost') NOT NULL DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pred_user (user_id),
+    INDEX idx_pred_market (market_id),
+    CONSTRAINT fk_pred_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 ];
 
 const c = await mysql.createConnection({

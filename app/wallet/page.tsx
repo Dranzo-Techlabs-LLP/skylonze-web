@@ -10,6 +10,7 @@ import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
 import { formatSky } from "@/lib/utils";
 import { apiGet, apiSend, type Me } from "@/lib/client";
+import { useAuth } from "@/components/AuthProvider";
 
 const MiniOrb = dynamic(() => import("@/components/MiniOrb").then((m) => m.MiniOrb), {
   ssr: false,
@@ -26,6 +27,7 @@ type Txn = {
 };
 
 export default function WalletPage() {
+  const { refresh } = useAuth();
   const [me, setMe] = useState<Me | null>(null);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ export default function WalletPage() {
       setSendNote({ k: "ok", m: `Sent ${send.amount} SKY to @${send.toHandle}.` });
       setSend({ toHandle: "", amount: "" });
       await load();
+      await refresh();
       setTimeout(() => setShowSend(false), 1200);
     } catch (err: any) {
       setSendNote({ k: "err", m: err.message });

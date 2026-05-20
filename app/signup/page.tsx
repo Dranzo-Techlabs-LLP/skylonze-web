@@ -7,7 +7,8 @@ import { Mail, User, Lock, AtSign, ChevronRight, AlertCircle } from "lucide-reac
 import { AuthShell } from "@/components/AuthShell";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-import { apiSend } from "@/lib/client";
+import { apiSend, type Me } from "@/lib/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", handle: "", email: "", password: "" });
@@ -16,6 +17,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const router = useRouter();
+  const { setUser } = useAuth();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +25,8 @@ export default function SignupPage() {
     if (!agree) { setError("Please accept the terms to continue."); return; }
     setBusy(true);
     try {
-      await apiSend("/api/auth/signup", "POST", form);
+      const { user } = await apiSend<{ user: Me }>("/api/auth/signup", "POST", form);
+      setUser(user);
       setOk(true);
       router.push("/dashboard");
       router.refresh();

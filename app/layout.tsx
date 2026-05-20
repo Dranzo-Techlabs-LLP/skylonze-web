@@ -3,6 +3,8 @@ import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { FooterGate } from "@/components/FooterGate";
+import { AuthProvider } from "@/components/AuthProvider";
+import { getCurrentUser } from "@/lib/session";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display", display: "swap" });
@@ -38,7 +40,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialUser = await getCurrentUser();
   return (
     <html lang="en" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <body className="min-h-dvh antialiased">
@@ -48,9 +51,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to main content
         </a>
-        <Nav />
-        <main id="main" className="relative">{children}</main>
-        <FooterGate />
+        <AuthProvider initialUser={initialUser as any}>
+          <Nav />
+          <main id="main" className="relative">{children}</main>
+          <FooterGate />
+        </AuthProvider>
       </body>
     </html>
   );

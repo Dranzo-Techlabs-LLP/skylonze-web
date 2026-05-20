@@ -7,20 +7,23 @@ import { Mail, Lock, ChevronRight, AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/AuthShell";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-import { apiSend } from "@/lib/client";
+import { apiSend, type Me } from "@/lib/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { setUser } = useAuth();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await apiSend("/api/auth/login", "POST", form);
+      const { user } = await apiSend<{ user: Me }>("/api/auth/login", "POST", form);
+      setUser(user);
       const next = new URLSearchParams(window.location.search).get("next") || "/dashboard";
       router.push(next.startsWith("/") ? next : "/dashboard");
       router.refresh();

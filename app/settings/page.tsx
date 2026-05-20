@@ -9,6 +9,7 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Avatar } from "@/components/Avatar";
 import { apiGet, apiSend, type Me } from "@/lib/client";
+import { useAuth } from "@/components/AuthProvider";
 
 function Note({ kind, msg }: { kind: "ok" | "err"; msg: string }) {
   return (
@@ -24,6 +25,7 @@ function Note({ kind, msg }: { kind: "ok" | "err"; msg: string }) {
 }
 
 export default function SettingsPage() {
+  const { refresh } = useAuth();
   const [me, setMe] = useState<Me | null>(null);
   const [profile, setProfile] = useState({ name: "", handle: "" });
   const [pw, setPw] = useState({ current: "", next: "" });
@@ -45,6 +47,7 @@ export default function SettingsPage() {
     try {
       const { user } = await apiSend<{ user: Me }>("/api/settings/profile", "PATCH", profile);
       setMe(user);
+      await refresh();
       setPNote({ k: "ok", m: "Profile updated." });
     } catch (err: any) {
       setPNote({ k: "err", m: err.message });

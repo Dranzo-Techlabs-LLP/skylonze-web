@@ -9,7 +9,7 @@ import { Button } from "./Button";
 import { SkyCoin } from "./SkyCoin";
 import { Avatar } from "./Avatar";
 import { cn, formatSky } from "@/lib/utils";
-import { fetchMe, apiSend, type Me } from "@/lib/client";
+import { useAuth } from "./AuthProvider";
 
 const links = [
   { href: "/markets", label: "Markets" },
@@ -22,11 +22,10 @@ const links = [
 export function Nav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [me, setMe] = useState<Me | null>(null);
-  const [loading, setLoading] = useState(true);
   const [menu, setMenu] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { user: me, logout: doLogout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -35,13 +34,8 @@ export function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    fetchMe().then((u) => { setMe(u); setLoading(false); });
-  }, []);
-
   async function logout() {
-    await apiSend("/api/auth/logout", "POST").catch(() => {});
-    setMe(null);
+    await doLogout();
     setMenu(false);
     setOpen(false);
     router.push("/");

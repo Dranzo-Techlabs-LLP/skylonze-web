@@ -13,11 +13,17 @@ import { StreakStrip } from "@/components/StreakStrip";
 import { StartupCard } from "@/components/StartupCard";
 import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
-import { markets, startups } from "@/lib/data";
+import { listMarkets } from "@/lib/markets";
+import { listStartups } from "@/lib/startups";
 import { ChevronRight, Sparkles } from "lucide-react";
 
-export default function HomePage() {
-  const trending = markets.filter((m) => m.hot).concat(markets).slice(0, 6);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [allMarkets, startups] = await Promise.all([listMarkets(), listStartups()]);
+  const hot = allMarkets.filter((m) => m.hot);
+  const seen = new Set<string>();
+  const trending = [...hot, ...allMarkets].filter((m) => (seen.has(m.id) ? false : seen.add(m.id))).slice(0, 6);
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { pool, query } from "./db";
-import { markets } from "./data";
+import { getMarket } from "./markets";
 
 export type Prediction = {
   id: number;
@@ -22,7 +22,7 @@ export async function placePrediction(opts: {
   side: "YES" | "NO";
   stake: number;
 }): Promise<{ prediction: Prediction; balance: number }> {
-  const market = markets.find((m) => m.id === opts.marketId);
+  const market = await getMarket(opts.marketId);
   if (!market) throw new Error("Market not found.");
   const stake = Math.floor(opts.stake);
   if (!stake || stake < 10) throw new Error("Minimum stake is 10 SKY.");
@@ -117,7 +117,7 @@ export async function pendingPayout(marketId: string) {
  * Guarded against double-reveal.
  */
 export async function revealMarket(marketId: string, outcome: "YES" | "NO", adminId: number) {
-  const market = markets.find((m) => m.id === marketId);
+  const market = await getMarket(marketId);
   if (!market) throw new Error("Market not found.");
   if (outcome !== "YES" && outcome !== "NO") throw new Error("Invalid outcome.");
 
@@ -164,7 +164,7 @@ export async function revealMarket(marketId: string, outcome: "YES" | "NO", admi
  * resolution distributed. Idempotent: only pays predictions not yet paid.
  */
 export async function distributeMarket(marketId: string) {
-  const market = markets.find((m) => m.id === marketId);
+  const market = await getMarket(marketId);
   if (!market) throw new Error("Market not found.");
 
   const conn = await pool.getConnection();

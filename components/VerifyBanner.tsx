@@ -37,7 +37,7 @@ export function VerifyBanner() {
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="flex items-center gap-2 text-xs text-warn">
             <MailWarning className="h-4 w-4 shrink-0" />
-            Verify your email (<span className="font-medium">{user.email}</span>) to claim 5,000 SKY and start predicting.
+            Verify your email (<span className="font-medium">{user.email}</span>) to claim 500 SKY and start predicting.
           </p>
           <button
             onClick={resend}

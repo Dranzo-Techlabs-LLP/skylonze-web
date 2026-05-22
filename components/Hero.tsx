@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { ChevronRight, ShieldCheck, Activity, Globe2 } from "lucide-react";
 import { Button } from "./Button";
@@ -10,6 +10,8 @@ import { SkyCoin } from "./SkyCoin";
 import { CitySilhouette } from "./CitySilhouette";
 import { PortalPedestal } from "./PortalPedestal";
 import { MagneticButton } from "./MagneticButton";
+import { apiGet } from "@/lib/client";
+import type { PlatformStats } from "@/lib/stats";
 
 const HeroScene = dynamic(() => import("./HeroScene").then((m) => m.HeroScene), {
   ssr: false,
@@ -21,6 +23,10 @@ const HeroScene = dynamic(() => import("./HeroScene").then((m) => m.HeroScene), 
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  useEffect(() => {
+    apiGet<PlatformStats>("/api/stats").then(setStats).catch(() => {});
+  }, []);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const yOrb = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -120]);
   const yCity = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 60]);
@@ -78,9 +84,9 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="hidden sm:flex items-center gap-3 text-[11px] text-ink-400"
           >
-            <span className="inline-flex items-center gap-1"><Activity className="h-3.5 w-3.5" /> 24h vol $24.8M</span>
+            <span className="inline-flex items-center gap-1"><Activity className="h-3.5 w-3.5" /> {stats?.activeMarkets ?? 0} active markets</span>
             <span>·</span>
-            <span className="inline-flex items-center gap-1"><Globe2 className="h-3.5 w-3.5" /> 100+ countries</span>
+            <span className="inline-flex items-center gap-1"><Globe2 className="h-3.5 w-3.5" /> {stats?.predictors ?? 0} predictors</span>
           </motion.div>
         </div>
 
@@ -139,11 +145,11 @@ export function Hero() {
             >
               <MagneticButton href="/signup">
                 <Button size="lg">
-                  Claim 5,000 SKY <ChevronRight className="h-4 w-4" />
+                  Claim 500 SKY <ChevronRight className="h-4 w-4" />
                 </Button>
               </MagneticButton>
-              <Link href="/markets">
-                <Button variant="secondary" size="lg">Explore markets</Button>
+              <Link href="/startups">
+                <Button variant="secondary" size="lg">Explore startups</Button>
               </Link>
               <div className="ml-1 inline-flex items-center gap-2 text-xs text-ink-400">
                 <ShieldCheck className="h-4 w-4 text-success" />
@@ -157,10 +163,10 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.7 }}
               className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 pt-2"
             >
-              <StatPill label="Total volume" value={24.8} prefix="$" suffix="M" decimals={1} />
-              <StatPill label="Active markets" value={1284} />
-              <StatPill label="Forecasters" value={86_542} />
-              <StatPill label="Win rate" value={62.4} suffix="%" decimals={1} />
+              <StatPill label="Total volume" value={stats ? stats.volume / 1_000_000 : 0} prefix="$" suffix="M" decimals={2} />
+              <StatPill label="Active markets" value={stats?.activeMarkets ?? 0} />
+              <StatPill label="Forecasters" value={stats?.users ?? 0} />
+              <StatPill label="Win rate" value={stats?.winRate ?? 0} suffix="%" decimals={1} />
             </motion.div>
           </motion.div>
 

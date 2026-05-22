@@ -38,7 +38,7 @@ export function AuthShell({
                 From crypto to startups.
               </h2>
               <ul className="mt-6 space-y-3 text-sm text-ink-200/90">
-                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-neon-pink" /> 5,000 starter SKY-3030 on signup</li>
+                <li className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-neon-pink" /> 500 starter SKY-3030 on signup</li>
                 <li className="flex items-center gap-2"><Trophy className="h-4 w-4 text-violet-300" /> Compete in Season 01 leaderboard</li>
                 <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-success" /> Virtual ecosystem — no real money risk</li>
               </ul>

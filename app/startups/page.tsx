@@ -1,17 +1,27 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StartupCard } from "@/components/StartupCard";
-import { startups } from "@/lib/data";
+import type { Startup } from "@/lib/data";
+import { apiGet } from "@/lib/client";
 import { cn } from "@/lib/utils";
 
-const sectors = ["All", "AI / Productivity", "Fintech", "BioTech", "ClimateTech", "Hardware", "AI / Infra"] as const;
-
 export default function StartupsPage() {
-  const [sector, setSector] = useState<(typeof sectors)[number]>("All");
+  const [startups, setStartups] = useState<Startup[]>([]);
+  const [sector, setSector] = useState<string>("All");
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    apiGet<{ startups: Startup[] }>("/api/startups").then(({ startups }) => setStartups(startups)).catch(() => {});
+  }, []);
+
+  const sectors = useMemo(
+    () => ["All", ...Array.from(new Set(startups.map((s) => s.sector)))],
+    [startups],
+  );
+
   const list = useMemo(() => {
     let l = startups.filter((s) => (sector === "All" ? true : s.sector === sector));
     if (q.trim()) {
@@ -19,7 +29,7 @@ export default function StartupsPage() {
       l = l.filter((s) => s.name.toLowerCase().includes(t) || s.pitch.toLowerCase().includes(t));
     }
     return l;
-  }, [sector, q]);
+  }, [startups, sector, q]);
 
   return (
     <>

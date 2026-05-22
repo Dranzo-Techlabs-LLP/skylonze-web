@@ -12,7 +12,7 @@ import { cn, formatSky } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
 
 const links = [
-  { href: "/markets", label: "Markets" },
+  { href: "/markets", label: "Predict" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/startups", label: "Startups" },
   { href: "/wallet", label: "Wallet" },

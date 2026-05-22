@@ -1,15 +1,25 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { MarketCard } from "@/components/MarketCard";
 import { MarketFilters } from "@/components/MarketFilters";
-import { markets, type Category } from "@/lib/data";
+import { type Category, type Market } from "@/lib/data";
+import { apiGet } from "@/lib/client";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function MarketsPage() {
+export default function PredictPage() {
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Category | "All">("All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"volume" | "yes" | "participants">("volume");
+
+  useEffect(() => {
+    apiGet<{ markets: Market[] }>("/api/markets")
+      .then(({ markets }) => setMarkets(markets))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     let list = markets.filter((m) => (active === "All" ? true : m.category === active));
@@ -21,14 +31,14 @@ export default function MarketsPage() {
     }
     list = [...list].sort((a, b) => b[sort] - a[sort]);
     return list;
-  }, [active, query, sort]);
+  }, [markets, active, query, sort]);
 
   return (
     <>
       <PageHeader
-        eyebrow="Markets"
+        eyebrow="Predict"
         title={<>Discover, filter, and <span className="text-gradient">forecast</span>.</>}
-        description="Real-time prediction markets across crypto, stocks, sports, technology, startups and trending events."
+        description="Real-time prediction markets across crypto, stocks, sports, technology, startups, trending and politics."
       />
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <MarketFilters
@@ -41,9 +51,9 @@ export default function MarketsPage() {
         />
 
         <div className="mt-8">
-          <p className="mb-4 text-xs text-ink-400">{filtered.length} markets</p>
+          <p className="mb-4 text-xs text-ink-400">{loading ? "Loading…" : `${filtered.length} markets`}</p>
           <AnimatePresence mode="popLayout">
-            {filtered.length === 0 ? (
+            {!loading && filtered.length === 0 ? (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0 }}
@@ -54,10 +64,7 @@ export default function MarketsPage() {
                 No markets match. Try a different filter.
               </motion.div>
             ) : (
-              <motion.div
-                layout
-                className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-              >
+              <motion.div layout className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((m, i) => (
                   <MarketCard key={m.id} m={m} index={i} />
                 ))}

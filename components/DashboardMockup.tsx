@@ -110,7 +110,7 @@ export function DashboardMockup() {
                       transition={{ duration: 1.2, ease: "easeOut" }}
                       fill="none"
                       stroke="url(#mk-stroke)"
-                      strokeWidth="1.6"
+                      strokeWidth="1"
                       points="0,55 25,48 50,52 75,40 100,42 125,30 150,34 175,22 200,28 225,16 250,20 275,10 300,12"
                     />
                   </svg>

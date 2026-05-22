@@ -9,7 +9,7 @@ export function ProbabilityBar({ yes }: { yes: number }) {
         <span className="text-success font-medium tabular">YES {yes}%</span>
         <span className="text-danger font-medium tabular">NO {no}%</span>
       </div>
-      <div className="relative h-2 w-full overflow-hidden rounded-full bg-bg-700">
+      <div className="relative h-1 w-full overflow-hidden rounded-full bg-bg-700">
         <motion.div
           initial={{ width: 0 }}
           whileInView={{ width: `${yes}%` }}

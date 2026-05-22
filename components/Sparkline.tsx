@@ -54,7 +54,7 @@ export function Sparkline({
         points={points}
         fill="none"
         stroke={stroke}
-        strokeWidth={2}
+        strokeWidth={1.25}
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}

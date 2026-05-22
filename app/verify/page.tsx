@@ -49,7 +49,7 @@ export default function VerifyPage() {
             <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <h1 className="mt-4 font-display text-2xl font-bold">Email verified</h1>
             <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm text-ink-200">
-              <SkyCoin size={18} /> 5,000 SKY-3030 credited to your wallet.
+              <SkyCoin size={18} /> 500 SKY-3030 credited to your wallet.
             </p>
             <div className="mt-6 grid gap-2">
               <Link href="/dashboard"><Button size="lg" className="w-full">Go to dashboard</Button></Link>

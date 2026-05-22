@@ -10,7 +10,7 @@ import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
 import { useAuth } from "@/components/AuthProvider";
 import { apiGet } from "@/lib/client";
-import { markets } from "@/lib/data";
+import type { Market } from "@/lib/data";
 import { formatSky } from "@/lib/utils";
 import { TrendingUp, Target, Trophy } from "lucide-react";
 
@@ -30,12 +30,16 @@ type Prediction = {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [preds, setPreds] = useState<Prediction[]>([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
   const [summary, setSummary] = useState({ open: 0, staked: 0, potential: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGet<{ predictions: Prediction[]; summary: typeof summary }>("/api/predictions")
-      .then(({ predictions, summary }) => { setPreds(predictions); setSummary(summary); })
+    Promise.all([
+      apiGet<{ predictions: Prediction[]; summary: typeof summary }>("/api/predictions"),
+      apiGet<{ markets: Market[] }>("/api/markets"),
+    ])
+      .then(([p, m]) => { setPreds(p.predictions); setSummary(p.summary); setMarkets(m.markets); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

@@ -86,7 +86,7 @@ export function PredictionPanel({
         <h3 className="mt-2 font-display text-lg font-bold">Confirm your email</h3>
         <p className="mt-2 text-sm text-ink-300">
           We sent a link to <span className="text-white font-medium">{user.email}</span>. Verify to claim
-          your 5,000 SKY and place predictions.
+          your 500 SKY and place predictions.
         </p>
         <Button onClick={resendVerify} size="lg" className="mt-5 w-full" disabled={resent !== "idle"}>
           {resent === "sending" && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -106,12 +106,12 @@ export function PredictionPanel({
         <p className="text-xs uppercase tracking-[0.18em] text-violet-300">Members only</p>
         <h3 className="mt-2 font-display text-lg font-bold">Sign in to predict</h3>
         <p className="mt-2 text-sm text-ink-300">
-          Create a free profile and get <span className="text-white font-semibold">5,000 SKY-3030</span> to
+          Create a free profile and get <span className="text-white font-semibold">500 SKY-3030</span> to
           start forecasting this market.
         </p>
         <div className="mt-5 grid gap-2">
           <Link href={`/signup`}>
-            <Button size="lg" className="w-full">Claim 5,000 SKY</Button>
+            <Button size="lg" className="w-full">Claim 500 SKY</Button>
           </Link>
           <Link href={`/login?next=/markets/${marketId}`}>
             <Button size="lg" variant="secondary" className="w-full">Sign in</Button>

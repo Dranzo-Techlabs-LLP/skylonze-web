@@ -39,7 +39,7 @@ export default function SignupPage() {
   return (
     <AuthShell
       title={<>Create your <span className="text-gradient">SKYLONZE</span> profile</>}
-      subtitle="Get 5,000 SKY-3030 to start forecasting in seconds."
+      subtitle="Get 500 SKY-3030 to start forecasting in seconds."
     >
       <form className="space-y-4" onSubmit={submit}>
         <Input
@@ -81,7 +81,7 @@ export default function SignupPage() {
         )}
 
         <Button type="submit" size="lg" className="w-full" disabled={busy}>
-          {busy ? "Creating…" : ok ? "Redirecting…" : <>Claim 5,000 SKY <ChevronRight className="h-4 w-4" /></>}
+          {busy ? "Creating…" : ok ? "Redirecting…" : <>Claim 500 SKY <ChevronRight className="h-4 w-4" /></>}
         </Button>
         <p className="text-center text-xs text-ink-400">
           Already have an account?{" "}

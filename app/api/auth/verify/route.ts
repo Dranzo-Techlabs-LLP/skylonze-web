@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const user = await findByVerifyToken(hashToken(String(token)));
     if (!user) return NextResponse.json({ error: "Invalid or expired verification link." }, { status: 400 });
 
-    const bonus = Number(process.env.SIGNUP_BONUS ?? 5000);
+    const bonus = Number(process.env.SIGNUP_BONUS ?? 500);
     const updated = await verifyAndGrantBonus(user.id, bonus);
 
     // If the verifier isn't logged in (clicked from email on another device), log them in.

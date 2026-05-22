@@ -29,12 +29,12 @@ export async function sendMail(to: string, subject: string, html: string, text?:
 
 export function verificationEmail(name: string, link: string) {
   const subject = "Verify your SKYLONZE email";
-  const text = `Welcome to SKYLONZE, ${name}!\n\nVerify your email to claim your 5,000 SKY-3030 and start forecasting:\n${link}\n\nLink expires in 24 hours. If you didn't sign up, ignore this email.`;
+  const text = `Welcome to SKYLONZE, ${name}!\n\nVerify your email to claim your 500 SKY-3030 and start forecasting:\n${link}\n\nLink expires in 24 hours. If you didn't sign up, ignore this email.`;
   const html = `
   <div style="font-family:Inter,Arial,sans-serif;background:#06030F;color:#F5F0FF;padding:32px;border-radius:16px;max-width:520px;margin:auto">
     <h1 style="font-size:22px;margin:0 0 8px">Welcome to <span style="color:#A87BFF">SKYLONZE</span>, ${name}</h1>
     <p style="color:#CDBEEF;font-size:14px;line-height:1.6">
-      Verify your email to claim your <b>5,000 SKY-3030</b> and start forecasting.
+      Verify your email to claim your <b>500 SKY-3030</b> and start forecasting.
     </p>
     <p style="margin:24px 0">
       <a href="${link}" style="background:linear-gradient(90deg,#7C3AED,#FF7BD5);color:#fff;text-decoration:none;padding:12px 22px;border-radius:12px;font-weight:600;display:inline-block">Verify email</a>

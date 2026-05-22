@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Users, Calendar, Flame } from "lucide-react";
-import { markets } from "@/lib/data";
 import { Badge } from "@/components/Badge";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { ChartArea } from "@/components/ChartArea";
@@ -9,21 +8,20 @@ import { PredictionPanel } from "@/components/PredictionPanel";
 import { SkyCoin } from "@/components/SkyCoin";
 import { Avatar } from "@/components/Avatar";
 import { formatSky } from "@/lib/utils";
-import { leaderboard } from "@/lib/data";
+import { getMarket } from "@/lib/markets";
 import { getResolution } from "@/lib/predictions";
+import { getLeaderboard } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return markets.map((m) => ({ id: m.id }));
-}
-
 export default async function MarketDetail({ params }: { params: { id: string } }) {
-  const m = markets.find((x) => x.id === params.id);
+  const m = await getMarket(params.id);
   if (!m) return notFound();
 
-  const resolution = await getResolution(m.id);
-  const recent = leaderboard.slice(0, 6);
+  const [resolution, recentRaw] = await Promise.all([getResolution(m.id), getLeaderboard(6)]);
+  const recent = recentRaw.map((u) => ({
+    handle: u.handle, name: u.name, avatarSeed: u.avatar_seed || u.handle, accuracy: u.accuracy,
+  }));
 
   return (
     <>
@@ -109,7 +107,7 @@ export default async function MarketDetail({ params }: { params: { id: string } 
                   <Avatar seed={u.avatarSeed} size={36} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{u.name}</p>
-                    <p className="truncate text-[11px] text-ink-400">{u.handle}</p>
+                    <p className="truncate text-[11px] text-ink-400">@{u.handle}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-ink-400 uppercase tracking-wider">Acc</p>

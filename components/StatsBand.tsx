@@ -1,29 +1,11 @@
 "use client";
 import { motion, useInView, useMotionValue, useTransform, animate } from "framer-motion";
-import { useEffect, useRef } from "react";
-import {
-  BarChart3, PieChart, Users, Star, Rocket, Globe2,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BarChart3, PieChart, Users, Star, Rocket, Gavel } from "lucide-react";
+import { apiGet } from "@/lib/client";
+import type { PlatformStats } from "@/lib/stats";
 
-type Item = {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-};
-
-const items: Item[] = [
-  { icon: BarChart3, label: "Total Volume", value: 24.8, prefix: "$", suffix: "M+", decimals: 1 },
-  { icon: PieChart, label: "Active Markets", value: 1284, suffix: "+" },
-  { icon: Users, label: "Users", value: 86, suffix: "K+" },
-  { icon: Star, label: "Predictors", value: 50, suffix: "K+" },
-  { icon: Rocket, label: "Startups", value: 200, suffix: "+" },
-  { icon: Globe2, label: "Countries", value: 100, suffix: "+" },
-];
-
-function Counter({ value, prefix = "", suffix = "", decimals = 0 }: Omit<Item, "icon" | "label">) {
+function Counter({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const mv = useMotionValue(0);
@@ -42,6 +24,21 @@ function Counter({ value, prefix = "", suffix = "", decimals = 0 }: Omit<Item, "
 }
 
 export function StatsBand() {
+  const [s, setS] = useState<PlatformStats | null>(null);
+  useEffect(() => {
+    apiGet<PlatformStats>("/api/stats").then(setS).catch(() => {});
+  }, []);
+
+  const volM = s ? s.volume / 1_000_000 : 0;
+  const items = [
+    { icon: BarChart3, label: "Total Volume", value: volM, prefix: "$", suffix: "M", decimals: 2 },
+    { icon: PieChart, label: "Active Markets", value: s?.activeMarkets ?? 0 },
+    { icon: Users, label: "Users", value: s?.users ?? 0 },
+    { icon: Star, label: "Predictors", value: s?.predictors ?? 0 },
+    { icon: Rocket, label: "Startups", value: s?.startups ?? 0 },
+    { icon: Gavel, label: "Resolved", value: s?.resolved ?? 0 },
+  ];
+
   return (
     <section className="relative mx-auto max-w-7xl px-4 sm:px-6 py-8">
       <div className="glass-strong rounded-3xl overflow-hidden">

@@ -1,10 +1,18 @@
 "use client";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { markets } from "@/lib/data";
+import type { Market } from "@/lib/data";
+import { apiGet } from "@/lib/client";
 import { formatPercent } from "@/lib/utils";
 
 export function TickerMarquee() {
+  const [markets, setMarkets] = useState<Market[]>([]);
+  useEffect(() => {
+    apiGet<{ markets: Market[] }>("/api/markets").then(({ markets }) => setMarkets(markets)).catch(() => {});
+  }, []);
+  if (markets.length === 0) return null;
+
   const items = [...markets, ...markets];
   return (
     <div className="relative w-full overflow-hidden border-y border-violet-400/15 bg-bg-800/50 marquee-mask">
@@ -15,8 +23,8 @@ export function TickerMarquee() {
       >
         {items.map((m, i) => {
           const last = m.trend[m.trend.length - 1] ?? 0;
-          const first = m.trend[0] ?? 0;
-          const diff = ((last - first) / first) * 100;
+          const first = m.trend[0] ?? 1;
+          const diff = ((last - first) / (first || 1)) * 100;
           const up = diff >= 0;
           return (
             <span key={`${m.id}-${i}`} className="inline-flex items-center gap-2 text-sm">

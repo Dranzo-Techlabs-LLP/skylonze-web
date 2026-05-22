@@ -9,6 +9,8 @@ export type Me = {
   sky_balance: number;
   status: "active" | "suspended";
   avatar_seed: string | null;
+  email_verified: number;
+  bonus_granted: number;
   created_at: string;
 };
 

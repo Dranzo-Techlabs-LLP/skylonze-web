@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserSession } from "@/lib/auth";
+import { findById } from "@/lib/users";
 import { listPredictions, placePrediction, predictionSummary } from "@/lib/predictions";
 
 export const runtime = "nodejs";
@@ -18,6 +19,12 @@ export async function GET() {
 export async function POST(req: Request) {
   const sess = await getUserSession();
   if (!sess) return NextResponse.json({ error: "Sign in to place a prediction." }, { status: 401 });
+
+  const user = await findById(sess.uid);
+  if (!user?.email_verified) {
+    return NextResponse.json({ error: "Verify your email to start predicting." }, { status: 403 });
+  }
+
   try {
     const { marketId, side, amount } = await req.json();
     const { prediction, balance } = await placePrediction({

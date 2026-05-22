@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronUp, ChevronDown, Check, Lock, AlertCircle, Gavel } from "lucide-react";
+import { ChevronUp, ChevronDown, Check, Lock, AlertCircle, Gavel, MailWarning, Loader2 } from "lucide-react";
 import { Button } from "./Button";
 import { SkyCoin } from "./SkyCoin";
 import { useAuth } from "./AuthProvider";
@@ -26,6 +26,13 @@ export function PredictionPanel({
   const [busy, setBusy] = useState(false);
   const [placed, setPlaced] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState<"idle" | "sending" | "sent">("idle");
+
+  async function resendVerify() {
+    setResent("sending");
+    try { await apiSend("/api/auth/resend", "POST"); setResent("sent"); }
+    catch { setResent("idle"); }
+  }
 
   const prob = side === "YES" ? yes : 100 - yes;
   const odds = prob > 0 ? +(100 / prob).toFixed(2) : 0;
@@ -64,6 +71,27 @@ export function PredictionPanel({
         <p className="mt-2 text-sm text-ink-300">
           This market is settled. Winning predictions have been paid out in SKY-3030.
         </p>
+      </div>
+    );
+  }
+
+  // Logged-in but email not verified: gate with verify prompt
+  if (user && !user.email_verified) {
+    return (
+      <div className="glass-strong rounded-3xl p-6 text-center">
+        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-warn/40 bg-warn/10">
+          <MailWarning className="h-5 w-5 text-warn" />
+        </span>
+        <p className="text-xs uppercase tracking-[0.18em] text-warn">Verify to predict</p>
+        <h3 className="mt-2 font-display text-lg font-bold">Confirm your email</h3>
+        <p className="mt-2 text-sm text-ink-300">
+          We sent a link to <span className="text-white font-medium">{user.email}</span>. Verify to claim
+          your 5,000 SKY and place predictions.
+        </p>
+        <Button onClick={resendVerify} size="lg" className="mt-5 w-full" disabled={resent !== "idle"}>
+          {resent === "sending" && <Loader2 className="h-4 w-4 animate-spin" />}
+          {resent === "sent" ? <><Check className="h-4 w-4" /> Email sent</> : resent === "sending" ? "Sending…" : "Resend verification"}
+        </Button>
       </div>
     );
   }

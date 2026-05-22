@@ -11,13 +11,17 @@ export type DbUser = {
   sky_balance: number;
   status: "active" | "suspended";
   avatar_seed: string | null;
+  email_verified: number;
+  bonus_granted: number;
+  verify_token_hash: string | null;
+  verify_expires: string | null;
   created_at: string;
 };
 
-export type PublicUser = Omit<DbUser, "password_hash">;
+export type PublicUser = Omit<DbUser, "password_hash" | "verify_token_hash" | "verify_expires">;
 
 export function toPublic(u: DbUser): PublicUser {
-  const { password_hash, ...rest } = u;
+  const { password_hash, verify_token_hash, verify_expires, ...rest } = u;
   return rest;
 }
 
@@ -31,31 +35,61 @@ export async function findById(id: number) {
   return queryOne<DbUser>("SELECT * FROM users WHERE id=? LIMIT 1", [id]);
 }
 
+/** Create an UNVERIFIED user (no bonus yet) with a hashed verification token. */
 export async function createUser(opts: {
   name: string;
   handle: string;
   email: string;
   password: string;
-  bonus: number;
+  verifyTokenHash: string;
+  verifyExpires: Date;
 }): Promise<DbUser> {
   const hash = await bcrypt.hash(opts.password, 10);
+  const [res]: any = await pool.query(
+    `INSERT INTO users (name, handle, email, password_hash, role, sky_balance, avatar_seed,
+       email_verified, bonus_granted, verify_token_hash, verify_expires)
+     VALUES (?,?,?,?,?,?,?,0,0,?,?)`,
+    [
+      opts.name, opts.handle.toLowerCase(), opts.email.toLowerCase(), hash, "user", 0,
+      opts.handle.toLowerCase(), opts.verifyTokenHash, opts.verifyExpires,
+    ],
+  );
+  const user = await findById(res.insertId as number);
+  return user as DbUser;
+}
+
+export async function setVerifyToken(userId: number, tokenHash: string, expires: Date) {
+  await query("UPDATE users SET verify_token_hash=?, verify_expires=? WHERE id=?", [tokenHash, expires, userId]);
+}
+
+export async function findByVerifyToken(tokenHash: string): Promise<DbUser | null> {
+  return queryOne<DbUser>(
+    "SELECT * FROM users WHERE verify_token_hash=? AND verify_expires > NOW() LIMIT 1",
+    [tokenHash],
+  );
+}
+
+/** Mark verified; grant the signup bonus exactly once. Returns updated user. */
+export async function verifyAndGrantBonus(userId: number, bonus: number): Promise<DbUser | null> {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [res]: any = await conn.query(
-      "INSERT INTO users (name, handle, email, password_hash, role, sky_balance, avatar_seed) VALUES (?,?,?,?,?,?,?)",
-      [opts.name, opts.handle.toLowerCase(), opts.email.toLowerCase(), hash, "user", opts.bonus, opts.handle.toLowerCase()],
+    const [rows]: any = await conn.query("SELECT sky_balance, bonus_granted FROM users WHERE id=? FOR UPDATE", [userId]);
+    if (!rows.length) throw new Error("User not found.");
+    const grant = rows[0].bonus_granted ? 0 : bonus;
+    const next = Number(rows[0].sky_balance) + grant;
+    await conn.query(
+      "UPDATE users SET email_verified=1, bonus_granted=1, verify_token_hash=NULL, verify_expires=NULL, sky_balance=? WHERE id=?",
+      [next, userId],
     );
-    const id = res.insertId as number;
-    if (opts.bonus > 0) {
+    if (grant > 0) {
       await conn.query(
         "INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)",
-        [id, "credit", opts.bonus, opts.bonus, "Welcome pack — starter SKY-3030"],
+        [userId, "credit", grant, next, "Welcome pack — starter SKY-3030"],
       );
     }
     await conn.commit();
-    const [rows]: any = await conn.query("SELECT * FROM users WHERE id=?", [id]);
-    return rows[0] as DbUser;
+    return findById(userId);
   } catch (e) {
     await conn.rollback();
     throw e;

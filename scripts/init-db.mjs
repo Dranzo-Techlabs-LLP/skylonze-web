@@ -21,6 +21,10 @@ const SCHEMA = [
     sky_balance BIGINT NOT NULL DEFAULT 0,
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     avatar_seed VARCHAR(60) DEFAULT NULL,
+    email_verified TINYINT NOT NULL DEFAULT 0,
+    bonus_granted TINYINT NOT NULL DEFAULT 0,
+    verify_token_hash VARCHAR(64) DEFAULT NULL,
+    verify_expires DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
@@ -76,6 +80,10 @@ const COLUMN_ADDS = [
   { table: "predictions", column: "paid_at", ddl: "ALTER TABLE predictions ADD COLUMN paid_at TIMESTAMP NULL DEFAULT NULL" },
   { table: "market_resolutions", column: "distributed", ddl: "ALTER TABLE market_resolutions ADD COLUMN distributed TINYINT NOT NULL DEFAULT 0" },
   { table: "market_resolutions", column: "distributed_at", ddl: "ALTER TABLE market_resolutions ADD COLUMN distributed_at TIMESTAMP NULL DEFAULT NULL" },
+  { table: "users", column: "email_verified", ddl: "ALTER TABLE users ADD COLUMN email_verified TINYINT NOT NULL DEFAULT 0" },
+  { table: "users", column: "bonus_granted", ddl: "ALTER TABLE users ADD COLUMN bonus_granted TINYINT NOT NULL DEFAULT 0" },
+  { table: "users", column: "verify_token_hash", ddl: "ALTER TABLE users ADD COLUMN verify_token_hash VARCHAR(64) DEFAULT NULL" },
+  { table: "users", column: "verify_expires", ddl: "ALTER TABLE users ADD COLUMN verify_expires DATETIME DEFAULT NULL" },
 ];
 
 const c = await mysql.createConnection({
@@ -98,12 +106,12 @@ const [rows] = await c.query("SELECT id FROM users WHERE email=?", [ADMIN_EMAIL]
 const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
 if (rows.length === 0) {
   await c.query(
-    "INSERT INTO users (name, handle, email, password_hash, role, sky_balance, avatar_seed) VALUES (?,?,?,?,?,?,?)",
+    "INSERT INTO users (name, handle, email, password_hash, role, sky_balance, avatar_seed, email_verified, bonus_granted) VALUES (?,?,?,?,?,?,?,1,1)",
     [ADMIN_NAME, "admin", ADMIN_EMAIL, hash, "admin", 0, "admin"],
   );
   console.log("Admin seeded:", ADMIN_EMAIL);
 } else {
-  await c.query("UPDATE users SET password_hash=?, role='admin', name=? WHERE email=?", [hash, ADMIN_NAME, ADMIN_EMAIL]);
+  await c.query("UPDATE users SET password_hash=?, role='admin', name=?, email_verified=1, bonus_granted=1 WHERE email=?", [hash, ADMIN_NAME, ADMIN_EMAIL]);
   console.log("Admin updated:", ADMIN_EMAIL);
 }
 

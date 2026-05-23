@@ -96,7 +96,7 @@ export default function SettingsPage() {
                 <Input label="Full name" required value={profile.name}
                   onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   startSlot={<User className="h-4 w-4" />} />
-                <Input label="Handle" required value={profile.handle}
+                <Input label="Username" required value={profile.handle}
                   onChange={(e) => setProfile({ ...profile, handle: e.target.value.replace(/\s+/g, "") })}
                   startSlot={<AtSign className="h-4 w-4" />} hint="3-30 chars: a-z 0-9 . _ -" />
                 {pNote && <Note kind={pNote.k} msg={pNote.m} />}

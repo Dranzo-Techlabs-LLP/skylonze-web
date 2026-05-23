@@ -49,6 +49,7 @@ export function ChartArea({ data, height = 220 }: { data: number[]; height?: num
         fill="none"
         stroke="url(#areaStroke)"
         strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
         strokeLinecap="round"
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}

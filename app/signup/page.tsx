@@ -49,7 +49,7 @@ export default function SignupPage() {
           startSlot={<User className="h-4 w-4" />} placeholder="Aria Forecaster"
         />
         <Input
-          label="Handle" name="handle" required
+          label="Username" name="handle" required
           value={form.handle}
           onChange={(e) => setForm({ ...form, handle: e.target.value.replace(/\s+/g, "") })}
           startSlot={<AtSign className="h-4 w-4" />} placeholder="aria.sky"

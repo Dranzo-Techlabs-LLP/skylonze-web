@@ -13,6 +13,7 @@ import { StreakStrip } from "@/components/StreakStrip";
 import { StartupCard } from "@/components/StartupCard";
 import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
+import { CtaButtons } from "@/components/CtaButtons";
 import { listMarkets } from "@/lib/markets";
 import { listStartups } from "@/lib/startups";
 import { ChevronRight, Sparkles } from "lucide-react";
@@ -114,14 +115,7 @@ export default async function HomePage() {
               <p className="text-ink-200">
                 Join 86,000+ forecasters shaping the consensus of tomorrow. Earn SKY‑3030, climb the leaderboard, and unlock the Oracle rank.
               </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Link href="/signup">
-                  <Button size="lg"><SkyCoin size={20} /> Claim starter SKY</Button>
-                </Link>
-                <Link href="/markets">
-                  <Button variant="secondary" size="lg">Browse markets</Button>
-                </Link>
-              </div>
+              <CtaButtons />
             </div>
           </div>
         </div>

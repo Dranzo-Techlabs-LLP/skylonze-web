@@ -12,6 +12,7 @@ import { PortalPedestal } from "./PortalPedestal";
 import { MagneticButton } from "./MagneticButton";
 import { apiGet } from "@/lib/client";
 import type { PlatformStats } from "@/lib/stats";
+import { useAuth } from "./AuthProvider";
 
 const HeroScene = dynamic(() => import("./HeroScene").then((m) => m.HeroScene), {
   ssr: false,
@@ -24,6 +25,7 @@ export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const { user } = useAuth();
   useEffect(() => {
     apiGet<PlatformStats>("/api/stats").then(setStats).catch(() => {});
   }, []);
@@ -143,11 +145,25 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.55 }}
               className="flex flex-wrap items-center gap-3"
             >
-              <MagneticButton href="/signup">
-                <Button size="lg">
-                  Claim 500 SKY <ChevronRight className="h-4 w-4" />
-                </Button>
-              </MagneticButton>
+              {user && user.bonus_granted ? (
+                <MagneticButton href="/dashboard">
+                  <Button size="lg">
+                    Open dashboard <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </MagneticButton>
+              ) : user ? (
+                <MagneticButton href="/settings">
+                  <Button size="lg">
+                    Verify email <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </MagneticButton>
+              ) : (
+                <MagneticButton href="/signup">
+                  <Button size="lg">
+                    Claim 500 SKY <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </MagneticButton>
+              )}
               <Link href="/startups">
                 <Button variant="secondary" size="lg">Explore startups</Button>
               </Link>

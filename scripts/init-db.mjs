@@ -114,6 +114,16 @@ const COLUMN_ADDS = [
   { table: "users", column: "bonus_granted", ddl: "ALTER TABLE users ADD COLUMN bonus_granted TINYINT NOT NULL DEFAULT 0" },
   { table: "users", column: "verify_token_hash", ddl: "ALTER TABLE users ADD COLUMN verify_token_hash VARCHAR(64) DEFAULT NULL" },
   { table: "users", column: "verify_expires", ddl: "ALTER TABLE users ADD COLUMN verify_expires DATETIME DEFAULT NULL" },
+  { table: "users", column: "avatar_url", ddl: "ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL" },
+  { table: "startups", column: "logo_url", ddl: "ALTER TABLE startups ADD COLUMN logo_url VARCHAR(255) DEFAULT NULL" },
+];
+
+const EXTRA_TABLES = [
+  `CREATE TABLE IF NOT EXISTS site_settings (
+    k VARCHAR(64) PRIMARY KEY,
+    v TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 ];
 
 const c = await mysql.createConnection({
@@ -123,6 +133,7 @@ const c = await mysql.createConnection({
 
 console.log("Connected. Creating tables…");
 for (const s of SCHEMA) await c.query(s);
+for (const s of EXTRA_TABLES) await c.query(s);
 for (const a of COLUMN_ADDS) {
   const [col] = await c.query(
     "SELECT COUNT(*) n FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?",

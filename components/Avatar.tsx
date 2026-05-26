@@ -19,11 +19,39 @@ export function Avatar({
   seed,
   size = 40,
   className,
+  src,
 }: {
   seed: string;
   size?: number;
   className?: string;
+  src?: string | null;
 }) {
+  if (src) {
+    return (
+      <span
+        className={cn(
+          "inline-block shrink-0 overflow-hidden rounded-full",
+          className,
+        )}
+        style={{
+          width: size,
+          height: size,
+          boxShadow:
+            "inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 12px rgba(168,123,255,0.3)",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          draggable={false}
+        />
+      </span>
+    );
+  }
   const { a, b } = hashColor(seed);
   const initials = seed.slice(0, 2).toUpperCase();
   return (
@@ -41,9 +69,7 @@ export function Avatar({
           "inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 12px rgba(168,123,255,0.3)",
       }}
     >
-      <span
-        className="flex h-[80%] w-[80%] items-center justify-center rounded-full bg-bg-800"
-      >
+      <span className="flex h-[80%] w-[80%] items-center justify-center rounded-full bg-bg-800">
         <span className="text-gradient font-display">{initials}</span>
       </span>
     </span>

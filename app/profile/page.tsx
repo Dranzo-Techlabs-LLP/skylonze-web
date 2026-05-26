@@ -63,7 +63,7 @@ export default function ProfilePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 grid gap-6 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="gradient-border p-1">
           <div className="relative rounded-2xl bg-bg-800/80 p-6 text-center">
-            <div className="mx-auto w-fit"><Avatar seed={user?.avatar_seed || user?.handle || "you"} size={96} /></div>
+            <div className="mx-auto w-fit"><Avatar seed={user?.avatar_seed || user?.handle || "you"} size={96} src={user?.avatar_url} /></div>
             <h2 className="mt-4 font-display text-xl font-bold">{user?.name || "Forecaster"}</h2>
             <p className="text-xs text-ink-400">@{user?.handle || "you"}</p>
             <div className="mt-3 flex justify-center gap-2">

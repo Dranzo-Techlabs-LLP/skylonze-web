@@ -11,6 +11,7 @@ export type DbUser = {
   sky_balance: number;
   status: "active" | "suspended";
   avatar_seed: string | null;
+  avatar_url: string | null;
   email_verified: number;
   bonus_granted: number;
   verify_token_hash: string | null;
@@ -156,4 +157,8 @@ export async function listUsers(search = "") {
 
 export async function setStatus(userId: number, status: "active" | "suspended") {
   await query("UPDATE users SET status=? WHERE id=?", [status, userId]);
+}
+
+export async function setAvatarUrl(userId: number, url: string | null) {
+  await query("UPDATE users SET avatar_url=? WHERE id=?", [url, userId]);
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import { Input } from "@/components/Input";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { SkyCoin } from "@/components/SkyCoin";
+import { ImageUpload } from "@/components/ImageUpload";
 import { apiGet, apiSend, type Me } from "@/lib/client";
 import { categories } from "@/lib/data";
 import { formatSky } from "@/lib/utils";
@@ -32,10 +33,11 @@ type AdminStartup = {
 };
 
 const blankMarket = { id: "", title: "", question: "", category: "Crypto", closes: "Dec 31, 2026", yes: 50, volume: 0, participants: 0, hot: false };
-const blankStartup = { id: "", name: "", pitch: "", sector: "", raised: 0, valuation: 0, growth: 0, founders: "" };
+const blankStartup = { id: "", name: "", pitch: "", sector: "", raised: 0, valuation: 0, growth: 0, founders: "", logoUrl: null as string | null };
 
 export default function AdminDashboard() {
-  const [tab, setTab] = useState<"users" | "markets" | "startups">("users");
+  const [tab, setTab] = useState<"users" | "markets" | "startups" | "site">("users");
+  const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<Me[]>([]);
   const [markets, setMarkets] = useState<AdminMarket[]>([]);
   const [startups, setStartups] = useState<AdminStartup[]>([]);
@@ -69,7 +71,24 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (tab === "markets") loadMarkets();
     if (tab === "startups") loadStartups();
+    if (tab === "site") loadSite();
   }, [tab]);
+
+  async function loadSite() {
+    try {
+      const { settings } = await apiGet<{ settings: Record<string, string> }>("/api/admin/site");
+      setSiteSettings(settings);
+    } catch { /* unauthorized handled elsewhere */ }
+  }
+  async function saveSite(patch: Record<string, string>) {
+    setBusy(true); setNote(null);
+    try {
+      const { settings } = await apiSend<{ settings: Record<string, string> }>("/api/admin/site", "PATCH", patch);
+      setSiteSettings(settings);
+      setNote({ k: "ok", m: "Homepage stats updated." });
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
 
   const stats = useMemo(() => {
     const total = users.length;
@@ -176,7 +195,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex gap-2">
-          {(["users", "markets", "startups"] as const).map((t) => (
+          {(["users", "markets", "startups", "site"] as const).map((t) => (
             <button key={t} onClick={() => { setTab(t); setNote(null); }}
               className={`h-9 rounded-full px-4 text-xs font-medium capitalize transition ${tab === t ? "bg-gradient-to-r from-violet-600 to-neon-pink text-white shadow-glow" : "border border-violet-400/20 text-ink-300 hover:text-white"}`}>
               {t}
@@ -208,7 +227,7 @@ export default function AdminDashboard() {
                     <li key={u.id} className="grid grid-cols-2 md:grid-cols-12 items-center gap-3 px-5 py-4">
                       <span className="hidden md:block col-span-1 text-xs tabular text-ink-400">#{u.id}</span>
                       <div className="col-span-2 md:col-span-4 flex items-center gap-3 min-w-0">
-                        <Avatar seed={u.avatar_seed || u.handle} size={34} />
+                        <Avatar seed={u.avatar_seed || u.handle} size={34} src={u.avatar_url} />
                         <div className="min-w-0"><p className="truncate text-sm font-medium">{u.name}</p><p className="truncate text-[11px] text-ink-400">@{u.handle} · {u.email}</p></div>
                       </div>
                       <span className="hidden md:block col-span-2"><Badge tone={u.role === "admin" ? "pink" : "violet"}>{u.role}</Badge></span>
@@ -293,16 +312,29 @@ export default function AdminDashboard() {
             </div>
           </>
         )}
+
+        {/* SITE */}
+        {tab === "site" && (
+          <SiteForm
+            settings={siteSettings}
+            busy={busy}
+            onSave={(patch) => saveSite(patch)}
+          />
+        )}
       </main>
 
       {/* Manage user modal */}
       {active && (
         <Modal onClose={() => setActive(null)}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0"><Avatar seed={active.avatar_seed || active.handle} size={40} /><div className="min-w-0"><p className="truncate font-display font-bold">{active.name}</p><p className="truncate text-[11px] text-ink-400">@{active.handle}</p></div></div>
+            <div className="flex items-center gap-3 min-w-0"><Avatar seed={active.avatar_seed || active.handle} size={40} src={active.avatar_url} /><div className="min-w-0"><p className="truncate font-display font-bold">{active.name}</p><p className="truncate text-[11px] text-ink-400">@{active.handle}</p></div></div>
             <CloseBtn onClick={() => setActive(null)} />
           </div>
           <div className="mt-4 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4"><p className="text-[10px] uppercase tracking-wider text-ink-400">Balance</p><p className="font-display text-2xl font-bold tabular text-gradient">{formatSky(Number(active.sky_balance))} SKY</p></div>
+          <div className="mt-4">
+            <ImageUpload label="Avatar" value={active.avatar_url} size={72} rounded="full"
+              onChange={async (url) => { await act(active.id, { action: "avatar", avatarUrl: url }, url ? "Avatar updated." : "Avatar cleared."); }} />
+          </div>
           <div className="mt-4 space-y-3">
             <Input label="Adjust amount" type="number" value={adj.amount} onChange={(e) => setAdj({ ...adj, amount: e.target.value })} placeholder="e.g. 1000 or -500" />
             <Input label="Note (optional)" value={adj.note} onChange={(e) => setAdj({ ...adj, note: e.target.value })} placeholder="Reason for adjustment" />
@@ -371,6 +403,7 @@ export default function AdminDashboard() {
         <Modal onClose={() => setStartupForm(null)}>
           <div className="flex items-center justify-between"><h3 className="font-display text-lg font-bold">{startupForm._editing ? "Edit startup" : "New startup"}</h3><CloseBtn onClick={() => setStartupForm(null)} /></div>
           <div className="mt-4 space-y-3 max-h-[60vh] overflow-auto pr-1">
+            <ImageUpload label="Logo" value={startupForm.logoUrl} onChange={(url) => setStartupForm({ ...startupForm, logoUrl: url })} size={72} rounded="lg" />
             <Input label="Name" value={startupForm.name} onChange={(e) => setStartupForm({ ...startupForm, name: e.target.value })} placeholder="Lumen AI" />
             <div className="space-y-1.5">
               <label className="text-[11px] uppercase tracking-wider text-ink-400">Pitch</label>
@@ -406,4 +439,68 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
 }
 function CloseBtn({ onClick }: { onClick: () => void }) {
   return <button onClick={onClick} className="rounded-lg p-1.5 hover:bg-white/5" aria-label="Close"><X className="h-5 w-5" /></button>;
+}
+
+const SITE_FIELDS: { key: string; label: string; hint: string }[] = [
+  { key: "volume", label: "Total Volume (SKY)", hint: "Empty = use computed (sum of all stakes)" },
+  { key: "activeMarkets", label: "Active Markets", hint: "Empty = total markets − resolved" },
+  { key: "users", label: "Users", hint: "Empty = count of role=user" },
+  { key: "predictors", label: "Predictors", hint: "Empty = distinct users with predictions" },
+  { key: "startups", label: "Startups", hint: "Empty = startups table count" },
+  { key: "resolved", label: "Resolved markets", hint: "Empty = market_resolutions count" },
+  { key: "winRate", label: "Win Rate %", hint: "Empty = won/(won+lost) × 100" },
+];
+
+function SiteForm({
+  settings,
+  busy,
+  onSave,
+}: {
+  settings: Record<string, string>;
+  busy: boolean;
+  onSave: (patch: Record<string, string>) => void;
+}) {
+  const [draft, setDraft] = React.useState<Record<string, string>>({});
+  // sync defaults from server state
+  React.useEffect(() => {
+    const d: Record<string, string> = {};
+    for (const f of SITE_FIELDS) d[f.key] = settings[`stats.${f.key}`] ?? "";
+    setDraft(d);
+  }, [settings]);
+
+  return (
+    <div className="glass rounded-3xl p-5 sm:p-6 space-y-4">
+      <div>
+        <h2 className="font-display text-lg font-bold uppercase tracking-wide">Homepage stats</h2>
+        <p className="text-xs text-ink-400 mt-1">
+          Override the live computed numbers shown on the landing page (Hero + StatsBand).
+          Leave a field blank to use the real computed value.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {SITE_FIELDS.map((f) => (
+          <div key={f.key} className="space-y-1.5">
+            <label className="text-[11px] uppercase tracking-wider text-ink-400">{f.label}</label>
+            <input
+              type="number"
+              step="any"
+              value={draft[f.key] ?? ""}
+              onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+              placeholder="(computed)"
+              className="h-11 w-full rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70 tabular"
+            />
+            <p className="text-[10px] text-ink-400">{f.hint}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Button disabled={busy} onClick={() => onSave(draft)}>{busy ? "Saving…" : "Save overrides"}</Button>
+        <Button variant="secondary" disabled={busy} onClick={() => {
+          const clear: Record<string, string> = {};
+          for (const f of SITE_FIELDS) clear[f.key] = "";
+          onSave(clear);
+        }}>Clear all overrides</Button>
+      </div>
+    </div>
+  );
 }

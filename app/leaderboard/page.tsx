@@ -55,7 +55,7 @@ export default function LeaderboardPage() {
                         <div className="relative rounded-2xl bg-bg-800/80 p-5 text-center">
                           {i === 0 && <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-6 text-neon-pink" />}
                           <p className="text-[10px] uppercase tracking-wider text-ink-400">Rank #{u.rank}</p>
-                          <div className="mt-3 flex justify-center"><Avatar seed={u.avatar_seed || u.handle} size={72} /></div>
+                          <div className="mt-3 flex justify-center"><Avatar seed={u.avatar_seed || u.handle} size={72} src={u.avatar_url} /></div>
                           <p className="mt-3 font-display text-lg font-semibold">{u.name}</p>
                           <p className="text-[11px] text-ink-400">@{u.handle}</p>
                           <div className="mt-3 flex items-center justify-center gap-2">
@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
                     className="grid grid-cols-12 items-center gap-3 px-5 py-4 hover:bg-white/[0.03] transition">
                     <span className="col-span-2 md:col-span-1 font-display text-base font-bold tabular text-ink-300">#{u.rank}</span>
                     <div className="col-span-10 md:col-span-4 flex items-center gap-3 min-w-0">
-                      <Avatar seed={u.avatar_seed || u.handle} size={36} />
+                      <Avatar seed={u.avatar_seed || u.handle} size={36} src={u.avatar_url} />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{u.name}</p>
                         <p className="truncate text-[11px] text-ink-400">@{u.handle}</p>

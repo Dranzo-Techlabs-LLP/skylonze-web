@@ -8,7 +8,16 @@ import { SkyCoin } from "./SkyCoin";
 import { Button } from "./Button";
 import { formatSky } from "@/lib/utils";
 
-function Logo({ seed }: { seed: string }) {
+function Logo({ seed, src }: { seed: string; src?: string | null }) {
+  if (src) {
+    return (
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-violet-400/30 bg-bg-900"
+        style={{ boxShadow: "0 0 18px rgba(168,123,255,0.35)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="h-full w-full object-cover" draggable={false} />
+      </div>
+    );
+  }
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   const rot = h % 360;
@@ -37,7 +46,7 @@ export function StartupCard({ s, index = 0 }: { s: Startup; index?: number }) {
     >
       <Card interactive className="h-full">
         <div className="flex items-start gap-4">
-          <Logo seed={s.logoSeed} />
+          <Logo seed={s.logoSeed} src={s.logoUrl} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-display text-base font-semibold truncate">{s.name}</h3>

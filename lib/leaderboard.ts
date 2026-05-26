@@ -5,6 +5,7 @@ export type LeaderRow = {
   name: string;
   handle: string;
   avatar_seed: string | null;
+  avatar_url: string | null;
   sky_balance: number;
   wins: number;
   losses: number;
@@ -23,7 +24,7 @@ function badge(profit: number, accuracy: number, settled: number): LeaderRow["ba
 
 export async function getLeaderboard(limit = 50): Promise<LeaderRow[]> {
   const rows = await query<any>(
-    `SELECT u.id, u.name, u.handle, u.avatar_seed, u.sky_balance,
+    `SELECT u.id, u.name, u.handle, u.avatar_seed, u.avatar_url, u.sky_balance,
        COALESCE(SUM(CASE WHEN p.status='won' THEN 1 ELSE 0 END),0) wins,
        COALESCE(SUM(CASE WHEN p.status='lost' THEN 1 ELSE 0 END),0) losses,
        COALESCE(SUM(CASE
@@ -49,6 +50,7 @@ export async function getLeaderboard(limit = 50): Promise<LeaderRow[]> {
       name: r.name,
       handle: r.handle,
       avatar_seed: r.avatar_seed,
+      avatar_url: r.avatar_url ?? null,
       sky_balance: Number(r.sky_balance),
       wins, losses, profit,
       accuracy,

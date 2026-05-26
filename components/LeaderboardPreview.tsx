@@ -54,7 +54,7 @@ export function LeaderboardPreview() {
               <span className="w-6 text-center font-display font-bold tabular text-ink-400">
                 {u.rank === 1 ? <Crown className="mx-auto h-4 w-4 text-neon-pink" /> : u.rank}
               </span>
-              <Avatar seed={u.avatar_seed || u.handle} size={36} />
+              <Avatar seed={u.avatar_seed || u.handle} size={36} src={u.avatar_url} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium">{u.name}</p>

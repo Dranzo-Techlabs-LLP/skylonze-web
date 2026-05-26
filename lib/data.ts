@@ -41,6 +41,7 @@ export type Startup = {
   growth: number;
   founders: string;
   logoSeed: string;
+  logoUrl?: string | null;
 };
 
 export type Reward = {

@@ -1,14 +1,15 @@
 import { query } from "./db";
+import { getAllSettings, STAT_KEYS } from "./site-settings";
 
 export type PlatformStats = {
-  volume: number;        // total SKY wagered (sum of stakes)
-  activeMarkets: number; // markets without a resolution
+  volume: number;
+  activeMarkets: number;
   totalMarkets: number;
-  users: number;         // role = user
-  predictors: number;    // distinct users with >=1 prediction
+  users: number;
+  predictors: number;
   startups: number;
-  resolved: number;      // resolved markets
-  winRate: number;       // settled win %
+  resolved: number;
+  winRate: number;
 };
 
 export async function getStats(): Promise<PlatformStats> {
@@ -27,7 +28,7 @@ export async function getStats(): Promise<PlatformStats> {
   const won = Number(wl.won), lost = Number(wl.lost);
   const settled = won + lost;
 
-  return {
+  const computed: PlatformStats = {
     volume: Number(vol.v),
     activeMarkets: Math.max(0, totalMarkets - resolved),
     totalMarkets,
@@ -37,4 +38,15 @@ export async function getStats(): Promise<PlatformStats> {
     resolved,
     winRate: settled > 0 ? +((won / settled) * 100).toFixed(1) : 0,
   };
+
+  // Admin overrides via site_settings (empty string = use computed)
+  const settings = await getAllSettings();
+  for (const k of STAT_KEYS) {
+    const v = settings[`stats.${k}`];
+    if (v !== undefined && v !== "") {
+      const n = Number(v);
+      if (!Number.isNaN(n)) (computed as any)[k] = n;
+    }
+  }
+  return computed;
 }

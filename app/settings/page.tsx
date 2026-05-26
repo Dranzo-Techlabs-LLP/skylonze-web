@@ -8,6 +8,7 @@ import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Avatar } from "@/components/Avatar";
+import { ImageUpload } from "@/components/ImageUpload";
 import { apiGet, apiSend, type Me } from "@/lib/client";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -75,17 +76,27 @@ export default function SettingsPage() {
       />
       <Section>
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="h-fit">
+          <Card className="h-fit space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar seed={me?.avatar_seed || me?.handle || "you"} size={56} />
+              <Avatar seed={me?.avatar_seed || me?.handle || "you"} size={56} src={me?.avatar_url} />
               <div className="min-w-0">
                 <p className="truncate font-display text-lg font-bold">{me?.name || "—"}</p>
                 <p className="truncate text-xs text-ink-400">@{me?.handle || "—"}</p>
               </div>
             </div>
-            <div className="mt-4 space-y-2 text-sm">
+            <div className="space-y-2 text-sm">
               <p className="flex items-center gap-2 text-ink-300"><Mail className="h-4 w-4 text-violet-300" /> {me?.email || "—"}</p>
               <p className="text-xs text-ink-400">Member since {me ? new Date(me.created_at).toLocaleDateString() : "—"}</p>
+            </div>
+            <div className="border-t border-violet-400/15 pt-4">
+              <ImageUpload label="Profile picture" value={me?.avatar_url ?? null} size={72} rounded="full"
+                onChange={async (url) => {
+                  try {
+                    const { user } = await apiSend<{ user: Me }>("/api/settings/avatar", "POST", { avatarUrl: url });
+                    setMe(user);
+                    await refresh();
+                  } catch { /* ignore */ }
+                }} />
             </div>
           </Card>
 

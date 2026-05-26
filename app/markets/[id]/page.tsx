@@ -6,11 +6,9 @@ import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { ChartArea } from "@/components/ChartArea";
 import { PredictionPanel } from "@/components/PredictionPanel";
 import { SkyCoin } from "@/components/SkyCoin";
-import { Avatar } from "@/components/Avatar";
 import { formatSky } from "@/lib/utils";
 import { getMarket } from "@/lib/markets";
 import { getResolution } from "@/lib/predictions";
-import { getLeaderboard } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +16,7 @@ export default async function MarketDetail({ params }: { params: { id: string } 
   const m = await getMarket(params.id);
   if (!m) return notFound();
 
-  const [resolution, recentRaw] = await Promise.all([getResolution(m.id), getLeaderboard(6)]);
-  const recent = recentRaw.map((u) => ({
-    handle: u.handle, name: u.name, avatarSeed: u.avatar_seed || u.handle, accuracy: u.accuracy,
-  }));
+  const resolution = await getResolution(m.id);
 
   return (
     <>
@@ -89,35 +84,6 @@ export default async function MarketDetail({ params }: { params: { id: string } 
             <div className="mt-6">
               <ChartArea data={m.trend} />
             </div>
-          </div>
-
-          <div className="glass rounded-3xl p-5 sm:p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold">Top forecasters on this market</h2>
-              <Link href="/leaderboard" className="text-xs text-violet-300 hover:text-white">
-                See all
-              </Link>
-            </div>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {recent.map((u) => (
-                <li
-                  key={u.handle}
-                  className="flex items-center gap-3 rounded-2xl border border-violet-400/15 bg-white/[0.03] p-3"
-                >
-                  <Avatar seed={u.avatarSeed} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{u.name}</p>
-                    <p className="truncate text-[11px] text-ink-400">@{u.handle}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-ink-400 uppercase tracking-wider">Acc</p>
-                    <p className="font-display text-sm font-bold tabular text-gradient">
-                      {u.accuracy.toFixed(1)}%
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
 
           <div className="glass rounded-3xl p-5 sm:p-6">

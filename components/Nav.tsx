@@ -87,7 +87,7 @@ export function Nav() {
                   aria-haspopup="menu"
                   aria-expanded={menu}
                 >
-                  <Avatar seed={me.avatar_seed || me.handle} size={28} />
+                  <Avatar seed={me.avatar_seed || me.handle} size={28} src={me.avatar_url} />
                   <span className="text-sm max-w-[110px] truncate">{me.name}</span>
                 </button>
                 <AnimatePresence>
@@ -143,7 +143,7 @@ export function Nav() {
             <div className="mx-auto max-w-7xl px-4 py-4 space-y-1">
               {me && (
                 <div className="mb-3 flex items-center gap-3 rounded-xl border border-violet-400/20 bg-white/5 px-3 py-3">
-                  <Avatar seed={me.avatar_seed || me.handle} size={36} />
+                  <Avatar seed={me.avatar_seed || me.handle} size={36} src={me.avatar_url} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{me.name}</p>
                     <p className="truncate text-[11px] text-ink-400">@{me.handle}</p>

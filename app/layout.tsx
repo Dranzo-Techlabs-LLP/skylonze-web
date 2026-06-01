@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { FooterGate } from "@/components/FooterGate";
 import { AuthProvider } from "@/components/AuthProvider";
 import { VerifyBanner } from "@/components/VerifyBanner";
+import { ChatWidget } from "@/components/ChatWidget";
 import { getCurrentUser } from "@/lib/session";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <VerifyBanner />
           <main id="main" className="relative">{children}</main>
           <FooterGate />
+          <ChatWidget />
         </AuthProvider>
       </body>
     </html>

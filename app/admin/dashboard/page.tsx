@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Search, LogOut, ShieldCheck, Users, Coins, Plus, Minus,
   Ban, CheckCircle2, X, AlertCircle, Check, Gavel, TrendingUp,
-  Pencil, Trash2, Rocket,
+  Pencil, Trash2, Rocket, BadgeCheck, ShieldAlert,
 } from "lucide-react";
 import { SLogo } from "@/components/SLogo";
 import { Button } from "@/components/Button";
@@ -29,7 +29,8 @@ type AdminMarket = {
 };
 type AdminStartup = {
   id: string; name: string; pitch: string; sector: string;
-  raised: number; valuation: number; growth: number; founders: string; logoSeed: string;
+  raised: number; valuation: number; growth: number; founders: string;
+  logoSeed: string; logoUrl?: string | null;
 };
 
 const blankMarket = { id: "", title: "", question: "", category: "Crypto", closes: "Dec 31, 2026", yes: 50, volume: 0, participants: 0, hot: false };
@@ -228,7 +229,15 @@ export default function AdminDashboard() {
                       <span className="hidden md:block col-span-1 text-xs tabular text-ink-400">#{u.id}</span>
                       <div className="col-span-2 md:col-span-4 flex items-center gap-3 min-w-0">
                         <Avatar seed={u.avatar_seed || u.handle} size={34} src={u.avatar_url} />
-                        <div className="min-w-0"><p className="truncate text-sm font-medium">{u.name}</p><p className="truncate text-[11px] text-ink-400">@{u.handle} · {u.email}</p></div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium flex items-center gap-1.5">
+                            <span className="truncate">{u.name}</span>
+                            {u.email_verified
+                              ? <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified" />
+                              : <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-warn" aria-label="Unverified" />}
+                          </p>
+                          <p className="truncate text-[11px] text-ink-400">@{u.handle} · {u.email}</p>
+                        </div>
                       </div>
                       <span className="hidden md:block col-span-2"><Badge tone={u.role === "admin" ? "pink" : "violet"}>{u.role}</Badge></span>
                       <span className="col-span-1 md:col-span-2 md:text-right font-display text-sm font-bold tabular text-gradient inline-flex md:justify-end items-center gap-1"><SkyCoin size={14} /> {formatSky(Number(u.sky_balance))}</span>
@@ -331,6 +340,27 @@ export default function AdminDashboard() {
             <CloseBtn onClick={() => setActive(null)} />
           </div>
           <div className="mt-4 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4"><p className="text-[10px] uppercase tracking-wider text-ink-400">Balance</p><p className="font-display text-2xl font-bold tabular text-gradient">{formatSky(Number(active.sky_balance))} SKY</p></div>
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-ink-400">Verification</p>
+              <p className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-medium">
+                {active.email_verified
+                  ? <><BadgeCheck className="h-4 w-4 text-success" /> Verified</>
+                  : <><ShieldAlert className="h-4 w-4 text-warn" /> Unverified</>}
+              </p>
+            </div>
+            {active.email_verified ? (
+              <Button size="sm" variant="outline" className="text-warn border-warn/40 shrink-0" disabled={busy}
+                onClick={() => act(active.id, { action: "unverify" }, "User marked unverified.")}>
+                <ShieldAlert className="h-4 w-4" /> Unverify
+              </Button>
+            ) : (
+              <Button size="sm" variant="secondary" className="shrink-0" disabled={busy}
+                onClick={() => act(active.id, { action: "verify" }, "User verified — bonus granted if first time.")}>
+                <BadgeCheck className="h-4 w-4" /> Verify
+              </Button>
+            )}
+          </div>
           <div className="mt-4">
             <ImageUpload label="Avatar" value={active.avatar_url} size={72} rounded="full"
               onChange={async (url) => { await act(active.id, { action: "avatar", avatarUrl: url }, url ? "Avatar updated." : "Avatar cleared."); }} />

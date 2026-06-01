@@ -66,7 +66,7 @@ export default async function HomePage() {
             />
             <StreakStrip />
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/signup">
+              <Link href="/dashboard">
                 <Button size="lg">Start your streak <ChevronRight className="h-4 w-4" /></Button>
               </Link>
               <Link href="/profile">

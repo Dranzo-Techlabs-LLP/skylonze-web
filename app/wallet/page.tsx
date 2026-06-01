@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, TrendingUp, TrendingDown, Send, X, Check, AlertCircle } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, Send, X, Check, AlertCircle, CreditCard, Lock } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
@@ -32,6 +32,7 @@ export default function WalletPage() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSend, setShowSend] = useState(false);
+  const [showBuy, setShowBuy] = useState(false);
   const [send, setSend] = useState({ toHandle: "", amount: "" });
   const [sendNote, setSendNote] = useState<{ k: "ok" | "err"; m: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -94,6 +95,7 @@ export default function WalletPage() {
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setShowSend(true)}><Send className="h-4 w-4" /> Send</Button>
+                <Button size="sm" variant="secondary" onClick={() => setShowBuy(true)}><CreditCard className="h-4 w-4" /> Buy SKY</Button>
                 <Button size="sm" variant="secondary" onClick={load}><ArrowUpRight className="h-4 w-4" /> Refresh</Button>
               </div>
             </div>
@@ -183,6 +185,55 @@ export default function WalletPage() {
                 {sending ? "Sending…" : <>Send <Send className="h-4 w-4" /></>}
               </Button>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Buy SKY modal — feature gated for now */}
+      {showBuy && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowBuy(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-md glass-strong rounded-3xl p-6"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold inline-flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-violet-300" /> Buy SKY-3030
+              </h3>
+              <button onClick={() => setShowBuy(false)} className="rounded-lg p-1.5 hover:bg-white/5" aria-label="Close">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-ink-300">
+              Purchase SKY-3030 with real money to top up your balance instantly.
+            </p>
+
+            {/* Preset packs (visual only while gated) */}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[
+                { sky: "1,000", price: "$4.99" },
+                { sky: "5,000", price: "$19.99" },
+                { sky: "15,000", price: "$49.99" },
+              ].map((p) => (
+                <div key={p.sky} className="rounded-2xl border border-violet-400/20 bg-white/[0.03] p-3 text-center opacity-70">
+                  <div className="flex items-center justify-center gap-1">
+                    <SkyCoin size={16} spin={false} />
+                    <span className="font-display text-sm font-bold tabular">{p.sky}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-ink-400">{p.price}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Sorry, this feature is currently available only to users with a higher rank.</p>
+            </div>
+
+            <Button className="mt-4 w-full" disabled>
+              <Lock className="h-4 w-4" /> Purchases locked
+            </Button>
           </motion.div>
         </div>
       )}

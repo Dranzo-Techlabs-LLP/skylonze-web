@@ -12,6 +12,38 @@ import type { LeaderRow } from "@/lib/leaderboard";
 
 const tones = { Oracle: "violet", Sage: "pink", Analyst: "cyan", Rookie: "neutral" } as const;
 
+const BADGE_GUIDE = [
+  { badge: "Oracle", tone: "violet", req: "10+ settled forecasts, 100K+ SKY realized profit, and 70%+ accuracy.", blurb: "The elite tier — reserved for the most accurate, high-volume forecasters." },
+  { badge: "Sage", tone: "pink", req: "25,000+ SKY in realized profit.", blurb: "Proven, consistently profitable predictors climbing toward Oracle." },
+  { badge: "Analyst", tone: "cyan", req: "At least one settled (won or lost) forecast.", blurb: "Active forecasters building a track record on resolved markets." },
+  { badge: "Rookie", tone: "neutral", req: "No settled forecasts yet.", blurb: "New arrivals — make predictions and resolve markets to rank up." },
+] as const;
+
+function BadgeGuide() {
+  return (
+    <div className="glass mt-8 rounded-3xl p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Trophy className="h-5 w-5 text-violet-300" />
+        <h2 className="font-display text-lg font-bold uppercase tracking-wide">How badges work</h2>
+      </div>
+      <p className="mt-1 text-sm text-ink-400">
+        Badges are earned automatically from your settled predictions. Rank up by winning markets and growing realized SKY profit.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {BADGE_GUIDE.map((b) => (
+          <div key={b.badge} className="rounded-2xl border border-violet-400/15 bg-white/[0.03] p-4">
+            <div className="flex items-center gap-2">
+              <Badge tone={b.tone}>{b.badge}</Badge>
+              <span className="text-[11px] uppercase tracking-wider text-ink-400">{b.req}</span>
+            </div>
+            <p className="mt-2 text-sm text-ink-300">{b.blurb}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LeaderboardPage() {
   const [rows, setRows] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +56,7 @@ export default function LeaderboardPage() {
   }, []);
 
   const podium = rows.slice(0, 3);
+  const ranked = rows.slice(0, 10);
 
   return (
     <>
@@ -44,24 +77,24 @@ export default function LeaderboardPage() {
         ) : (
           <>
             {podium.length > 0 && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-10">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-6">
                 {podium.map((u, i) => {
                   const order = i === 0 ? "sm:order-2" : i === 1 ? "sm:order-1" : "sm:order-3";
-                  const scale = i === 0 ? "sm:scale-[1.05]" : "";
+                  const scale = i === 0 ? "sm:scale-[1.03]" : "";
                   return (
                     <motion.div key={u.handle} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }} className={`relative ${order} ${scale}`}>
                       <div className="gradient-border p-1">
-                        <div className="relative rounded-2xl bg-bg-800/80 p-5 text-center">
+                        <div className="relative rounded-2xl bg-bg-800/80 p-4 text-center">
                           {i === 0 && <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-6 text-neon-pink" />}
                           <p className="text-[10px] uppercase tracking-wider text-ink-400">Rank #{u.rank}</p>
-                          <div className="mt-3 flex justify-center"><Avatar seed={u.avatar_seed || u.handle} size={72} src={u.avatar_url} /></div>
-                          <p className="mt-3 font-display text-lg font-semibold">{u.name}</p>
+                          <div className="mt-2 flex justify-center"><Avatar seed={u.avatar_seed || u.handle} size={56} src={u.avatar_url} /></div>
+                          <p className="mt-2 font-display text-base font-semibold">{u.name}</p>
                           <p className="text-[11px] text-ink-400">@{u.handle}</p>
-                          <div className="mt-3 flex items-center justify-center gap-2">
+                          <div className="mt-2 flex items-center justify-center gap-2">
                             <Badge tone={tones[u.badge]}>{u.badge}</Badge>
                           </div>
-                          <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                             <div className="rounded-xl bg-white/[0.04] p-2">
                               <p className="text-[10px] text-ink-400">Profit</p>
                               <p className="font-display text-sm font-bold tabular text-gradient">{formatSky(u.profit)}</p>
@@ -89,7 +122,7 @@ export default function LeaderboardPage() {
                 <span className="col-span-2 text-right">Badge</span>
               </div>
               <ul className="divide-y divide-violet-400/10">
-                {rows.map((u, i) => (
+                {ranked.map((u, i) => (
                   <motion.li key={u.handle} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: Math.min(i * 0.03, 0.5) }}
                     className="grid grid-cols-12 items-center gap-3 px-5 py-4 hover:bg-white/[0.03] transition">
@@ -121,6 +154,8 @@ export default function LeaderboardPage() {
                 ))}
               </ul>
             </div>
+
+            <BadgeGuide />
           </>
         )}
       </section>

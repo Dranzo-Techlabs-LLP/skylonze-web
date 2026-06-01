@@ -124,6 +124,18 @@ const EXTRA_TABLES = [
     v TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+  `CREATE TABLE IF NOT EXISTS startup_investments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    startup_id VARCHAR(64) NOT NULL,
+    startup_name VARCHAR(120) NOT NULL,
+    amount BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_si_user (user_id),
+    INDEX idx_si_startup (startup_id),
+    CONSTRAINT fk_si_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 ];
 
 const c = await mysql.createConnection({

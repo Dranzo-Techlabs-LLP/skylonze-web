@@ -8,3 +8,9 @@ out
 *.zip
 .vercel
 .turbo
+
+# Runtime user uploads (created on demand by /api/upload)
+/public/uploads
+
+# TypeScript incremental build info
+*.tsbuildinfo

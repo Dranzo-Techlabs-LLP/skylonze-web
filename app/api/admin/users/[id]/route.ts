@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { adjustBalance, findById, setAvatarUrl, setStatus, toPublic } from "@/lib/users";
+import { adjustBalance, adminSetVerified, findById, setAvatarUrl, setStatus, toPublic } from "@/lib/users";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +26,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       await setStatus(id, "active");
     } else if (action === "avatar") {
       await setAvatarUrl(id, body.avatarUrl ?? null);
+    } else if (action === "verify") {
+      const bonus = Number(process.env.SIGNUP_BONUS ?? 500);
+      await adminSetVerified(id, true, bonus);
+    } else if (action === "unverify") {
+      await adminSetVerified(id, false, 0);
     } else {
       return NextResponse.json({ error: "Unknown action." }, { status: 400 });
     }

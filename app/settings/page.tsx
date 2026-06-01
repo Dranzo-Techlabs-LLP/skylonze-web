@@ -91,12 +91,17 @@ export default function SettingsPage() {
             <div className="border-t border-violet-400/15 pt-4">
               <ImageUpload label="Profile picture" value={me?.avatar_url ?? null} size={72} rounded="full"
                 onChange={async (url) => {
+                  setPNote(null);
                   try {
                     const { user } = await apiSend<{ user: Me }>("/api/settings/avatar", "POST", { avatarUrl: url });
                     setMe(user);
                     await refresh();
-                  } catch { /* ignore */ }
+                    setPNote({ k: "ok", m: url ? "Profile picture updated." : "Profile picture removed." });
+                  } catch (err: any) {
+                    setPNote({ k: "err", m: err.message || "Could not update photo." });
+                  }
                 }} />
+              {pNote && <div className="mt-3"><Note kind={pNote.k} msg={pNote.m} /></div>}
             </div>
           </Card>
 

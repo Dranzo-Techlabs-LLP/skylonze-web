@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Target, Trophy, Award, Settings, Coins } from "lucide-react";
+import { Target, Trophy, Award, Settings, Coins, Camera, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
@@ -10,7 +10,7 @@ import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
 import { Card } from "@/components/Card";
 import { useAuth } from "@/components/AuthProvider";
-import { apiGet } from "@/lib/client";
+import { apiGet, apiSend } from "@/lib/client";
 import { formatSky } from "@/lib/utils";
 
 type Prediction = {
@@ -63,7 +63,7 @@ export default function ProfilePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 grid gap-6 lg:grid-cols-3">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="gradient-border p-1">
           <div className="relative rounded-2xl bg-bg-800/80 p-6 text-center">
-            <div className="mx-auto w-fit"><Avatar seed={user?.avatar_seed || user?.handle || "you"} size={96} src={user?.avatar_url} /></div>
+            <AvatarUploader />
             <h2 className="mt-4 font-display text-xl font-bold">{user?.name || "Forecaster"}</h2>
             <p className="text-xs text-ink-400">@{user?.handle || "you"}</p>
             <div className="mt-3 flex justify-center gap-2">
@@ -139,6 +139,63 @@ export default function ProfilePage() {
         </div>
       </section>
     </>
+  );
+}
+
+function AvatarUploader() {
+  const { user, refresh } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setErr(null);
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", f);
+      const r = await fetch("/api/upload", { method: "POST", credentials: "include", body: form });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Upload failed");
+      await apiSend("/api/settings/avatar", "POST", { avatarUrl: j.url });
+      await refresh();
+    } catch (e: any) {
+      setErr(e.message || "Upload failed");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mx-auto w-fit">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="group relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        aria-label="Change profile photo"
+        title="Change profile photo"
+      >
+        <Avatar seed={user?.avatar_seed || user?.handle || "you"} size={96} src={user?.avatar_url} />
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 transition group-hover:opacity-100">
+          {busy ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Camera className="h-5 w-5 text-white" />}
+        </span>
+        <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-bg-800 bg-violet-600 text-white shadow-glow">
+          <Camera className="h-3.5 w-3.5" />
+        </span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+        onChange={pick}
+        className="hidden"
+      />
+      {err && <p className="mt-2 text-[11px] text-danger">{err}</p>}
+    </div>
   );
 }
 

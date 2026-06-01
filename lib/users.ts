@@ -162,3 +162,14 @@ export async function setStatus(userId: number, status: "active" | "suspended") 
 export async function setAvatarUrl(userId: number, url: string | null) {
   await query("UPDATE users SET avatar_url=? WHERE id=?", [url, userId]);
 }
+
+/**
+ * Admin manual verification. Verifying marks the account verified and grants
+ * the signup bonus exactly once (reusing the same atomic path as email
+ * verification). Unverifying just flips the flag back.
+ */
+export async function adminSetVerified(userId: number, verified: boolean, bonus: number): Promise<DbUser | null> {
+  if (verified) return verifyAndGrantBonus(userId, bonus);
+  await query("UPDATE users SET email_verified=0 WHERE id=?", [userId]);
+  return findById(userId);
+}

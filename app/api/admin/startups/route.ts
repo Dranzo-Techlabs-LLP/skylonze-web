@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       growth: Number(b.growth) || 0,
       founders: b.founders || "",
       logoSeed: b.logoSeed || "",
+      logoUrl: b.logoUrl ?? null,
     });
     return NextResponse.json({ startup }, { status: 201 });
   } catch (e: any) {

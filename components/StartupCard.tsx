@@ -75,7 +75,7 @@ export function StartupCard({ s, index = 0 }: { s: Startup; index?: number }) {
       });
       setRaised(r.raised);
       setBacked(true);
-      setNote({ k: "ok", m: `You backed ${s.name} with ${formatSky(Number(amount))} SKY.` });
+      setNote({ k: "ok", m: `You invested ${formatSky(Number(amount))} SKY in ${s.name}.` });
       await refresh();
     } catch (err: any) {
       setNote({ k: "err", m: err.message });
@@ -124,7 +124,7 @@ export function StartupCard({ s, index = 0 }: { s: Startup; index?: number }) {
               <Users className="h-3.5 w-3.5" /> Founders: {s.founders}
             </span>
             <Button size="sm" variant="secondary" onClick={openModal}>
-              <SkyCoin size={14} spin={false} /> Back
+              <SkyCoin size={14} spin={false} /> Invest
             </Button>
           </div>
         </Card>
@@ -198,7 +198,7 @@ export function StartupCard({ s, index = 0 }: { s: Startup; index?: number }) {
                   </Button>
                 ) : (
                   <Button type="submit" className="w-full" disabled={busy}>
-                    {busy ? "Backing…" : <><SkyCoin size={16} spin={false} /> Back this startup</>}
+                    {busy ? "Investing…" : <><SkyCoin size={16} spin={false} /> Invest in this startup</>}
                   </Button>
                 )}
               </form>

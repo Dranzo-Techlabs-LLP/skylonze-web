@@ -11,7 +11,7 @@ import { SkyCoin } from "@/components/SkyCoin";
 import { Card } from "@/components/Card";
 import { useAuth } from "@/components/AuthProvider";
 import { apiGet, apiSend } from "@/lib/client";
-import { formatSky } from "@/lib/utils";
+import { formatSky, formatBalance } from "@/lib/utils";
 
 type Prediction = {
   id: number; market_id: string; market_title: string; category: string;
@@ -71,7 +71,7 @@ export default function ProfilePage() {
               <Badge tone="violet">Season 01</Badge>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-2 text-center">
-              <Stat icon={Coins} label="Balance" value={user ? formatSky(user.sky_balance) : "—"} />
+              <Stat icon={Coins} label="Balance" value={user ? formatBalance(user.sky_balance) : "—"} />
               <Stat icon={Target} label="Accuracy" value={`${m.accuracy.toFixed(0)}%`} />
               <Stat icon={Award} label="Badges" value={`${earnedCount}/${badges.length}`} />
             </div>

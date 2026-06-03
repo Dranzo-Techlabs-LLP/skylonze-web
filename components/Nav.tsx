@@ -8,7 +8,7 @@ import { Logo } from "./Logo";
 import { Button } from "./Button";
 import { SkyCoin } from "./SkyCoin";
 import { Avatar } from "./Avatar";
-import { cn, formatSky } from "@/lib/utils";
+import { cn, formatBalance } from "@/lib/utils";
 import { useAuth } from "./AuthProvider";
 
 const links = [
@@ -77,7 +77,7 @@ export function Nav() {
                 className="flex h-10 items-center gap-2 rounded-xl border border-violet-400/30 bg-white/5 px-3 text-sm font-medium hover:border-violet-400/60 transition"
               >
                 <SkyCoin size={20} />
-                <span className="tabular">{formatSky(me.sky_balance)}</span>
+                <span className="tabular">{formatBalance(me.sky_balance)}</span>
                 <span className="text-ink-400">SKY</span>
               </Link>
               <div className="relative">
@@ -149,7 +149,7 @@ export function Nav() {
                     <p className="truncate text-[11px] text-ink-400">@{me.handle}</p>
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs tabular">
-                    <SkyCoin size={16} /> {formatSky(me.sky_balance)}
+                    <SkyCoin size={16} /> {formatBalance(me.sky_balance)}
                   </span>
                 </div>
               )}

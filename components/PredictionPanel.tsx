@@ -8,7 +8,7 @@ import { Button } from "./Button";
 import { SkyCoin } from "./SkyCoin";
 import { useAuth } from "./AuthProvider";
 import { apiSend } from "@/lib/client";
-import { cn, formatSky } from "@/lib/utils";
+import { cn, formatSky, formatBalance } from "@/lib/utils";
 
 export function PredictionPanel({
   yes,
@@ -126,7 +126,7 @@ export function PredictionPanel({
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.18em] text-violet-300">Place forecast</p>
         <span className="inline-flex items-center gap-1.5 text-xs text-ink-300">
-          <SkyCoin size={16} /> <span className="tabular">{formatSky(user.sky_balance)}</span> bal
+          <SkyCoin size={16} /> <span className="tabular">{formatBalance(user.sky_balance)}</span> bal
         </span>
       </div>
 

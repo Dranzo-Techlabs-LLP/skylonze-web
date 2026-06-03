@@ -8,7 +8,7 @@ import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
-import { formatSky } from "@/lib/utils";
+import { formatSky, formatBalance } from "@/lib/utils";
 import { apiGet, apiSend, type Me } from "@/lib/client";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -88,7 +88,7 @@ export default function WalletPage() {
                 <SkyCoin size={48} />
                 <div>
                   <p className="font-display text-4xl sm:text-5xl font-bold tabular text-gradient">
-                    {loading ? "—" : (me?.sky_balance ?? 0).toLocaleString()}
+                    {loading ? "—" : formatBalance(me?.sky_balance ?? 0)}
                   </p>
                   <p className="text-xs text-ink-400">SKY-3030</p>
                 </div>
@@ -145,7 +145,7 @@ export default function WalletPage() {
                       <span className={`font-display tabular text-sm font-bold ${inflow ? "text-success" : "text-danger"}`}>
                         {inflow ? "+" : "-"}{formatSky(Number(t.amount))}
                       </span>
-                      <p className="text-[10px] text-ink-400 tabular">bal {formatSky(Number(t.balance_after))}</p>
+                      <p className="text-[10px] text-ink-400 tabular">bal {formatBalance(Number(t.balance_after))}</p>
                     </div>
                   </li>
                 );

@@ -9,7 +9,7 @@ import { Badge } from "./Badge";
 import { SkyCoin } from "./SkyCoin";
 import { Button } from "./Button";
 import { Input } from "./Input";
-import { formatSky } from "@/lib/utils";
+import { formatSky, formatBalance } from "@/lib/utils";
 import { apiSend } from "@/lib/client";
 import { useAuth } from "./AuthProvider";
 
@@ -156,7 +156,7 @@ export function StartupCard({ s, index = 0 }: { s: Startup; index?: number }) {
               <div className="mt-4 flex items-center justify-between rounded-2xl border border-violet-400/20 bg-white/[0.03] px-4 py-3">
                 <span className="text-xs text-ink-400">Your balance</span>
                 <span className="inline-flex items-center gap-1 font-display text-sm font-bold tabular text-gradient">
-                  <SkyCoin size={14} /> {user ? formatSky(user.sky_balance) : "—"} SKY
+                  <SkyCoin size={14} /> {user ? formatBalance(user.sky_balance) : "—"} SKY
                 </span>
               </div>
 

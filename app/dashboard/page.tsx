@@ -11,7 +11,7 @@ import { Badge } from "@/components/Badge";
 import { useAuth } from "@/components/AuthProvider";
 import { apiGet } from "@/lib/client";
 import type { Market } from "@/lib/data";
-import { formatSky } from "@/lib/utils";
+import { formatSky, formatBalance } from "@/lib/utils";
 import { TrendingUp, Target, Trophy } from "lucide-react";
 
 type Prediction = {
@@ -59,7 +59,7 @@ export default function DashboardPage() {
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "SKY balance", value: user ? formatSky(user.sky_balance) : "—", sub: "available", coin: true },
+          { label: "SKY balance", value: user ? formatBalance(user.sky_balance) : "—", sub: "available", coin: true },
           { label: "Open positions", value: String(summary.open), sub: `${formatSky(summary.staked)} staked`, icon: Target },
           { label: "Potential payout", value: formatSky(summary.potential), sub: "if all win", icon: TrendingUp },
           { label: "Rank", value: summary.open > 0 ? "Unranked" : "New", sub: "Season 01", icon: Trophy },

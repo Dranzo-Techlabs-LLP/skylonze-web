@@ -16,7 +16,7 @@ import { SkyCoin } from "@/components/SkyCoin";
 import { ImageUpload } from "@/components/ImageUpload";
 import { apiGet, apiSend, type Me } from "@/lib/client";
 import { categories } from "@/lib/data";
-import { formatSky } from "@/lib/utils";
+import { formatSky, formatBalance } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <span className="hidden md:block col-span-2"><Badge tone={u.role === "admin" ? "pink" : "violet"}>{u.role}</Badge></span>
-                      <span className="col-span-1 md:col-span-2 md:text-right font-display text-sm font-bold tabular text-gradient inline-flex md:justify-end items-center gap-1"><SkyCoin size={14} /> {formatSky(Number(u.sky_balance))}</span>
+                      <span className="col-span-1 md:col-span-2 md:text-right font-display text-sm font-bold tabular text-gradient inline-flex md:justify-end items-center gap-1"><SkyCoin size={14} /> {formatBalance(Number(u.sky_balance))}</span>
                       <span className="hidden md:flex col-span-1 justify-center">{u.status === "active" ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Ban className="h-4 w-4 text-danger" />}</span>
                       <div className="col-span-1 md:col-span-2 flex md:justify-end gap-2"><Button size="sm" variant="secondary" onClick={() => { setActive(u); setAdj({ amount: "", note: "" }); setNote(null); }}>Manage</Button></div>
                     </li>
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3 min-w-0"><Avatar seed={active.avatar_seed || active.handle} size={40} src={active.avatar_url} /><div className="min-w-0"><p className="truncate font-display font-bold">{active.name}</p><p className="truncate text-[11px] text-ink-400">@{active.handle}</p></div></div>
             <CloseBtn onClick={() => setActive(null)} />
           </div>
-          <div className="mt-4 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4"><p className="text-[10px] uppercase tracking-wider text-ink-400">Balance</p><p className="font-display text-2xl font-bold tabular text-gradient">{formatSky(Number(active.sky_balance))} SKY</p></div>
+          <div className="mt-4 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4"><p className="text-[10px] uppercase tracking-wider text-ink-400">Balance</p><p className="font-display text-2xl font-bold tabular text-gradient">{formatBalance(Number(active.sky_balance))} SKY</p></div>
           <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-violet-400/20 bg-white/[0.03] p-4">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-ink-400">Verification</p>

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Crown, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
@@ -55,7 +55,6 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const podium = rows.slice(0, 3);
   const ranked = rows.slice(0, 10);
 
   return (
@@ -76,42 +75,6 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            {podium.length > 0 && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-6">
-                {podium.map((u, i) => {
-                  const order = i === 0 ? "sm:order-2" : i === 1 ? "sm:order-1" : "sm:order-3";
-                  const scale = i === 0 ? "sm:scale-[1.03]" : "";
-                  return (
-                    <motion.div key={u.handle} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }} className={`relative ${order} ${scale}`}>
-                      <div className="gradient-border p-1">
-                        <div className="relative rounded-2xl bg-bg-800/80 p-4 text-center">
-                          {i === 0 && <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-6 text-neon-pink" />}
-                          <p className="text-[10px] uppercase tracking-wider text-ink-400">Rank #{u.rank}</p>
-                          <div className="mt-2 flex justify-center"><Avatar seed={u.avatar_seed || u.handle} size={56} src={u.avatar_url} /></div>
-                          <p className="mt-2 font-display text-base font-semibold">{u.name}</p>
-                          <p className="text-[11px] text-ink-400">@{u.handle}</p>
-                          <div className="mt-2 flex items-center justify-center gap-2">
-                            <Badge tone={tones[u.badge]}>{u.badge}</Badge>
-                          </div>
-                          <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-                            <div className="rounded-xl bg-white/[0.04] p-2">
-                              <p className="text-[10px] text-ink-400">Profit</p>
-                              <p className="font-display text-sm font-bold tabular text-gradient">{formatSky(u.profit)}</p>
-                            </div>
-                            <div className="rounded-xl bg-white/[0.04] p-2">
-                              <p className="text-[10px] text-ink-400">Accuracy</p>
-                              <p className="font-display text-sm font-bold tabular">{u.accuracy.toFixed(0)}%</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-
             <div className="glass rounded-3xl overflow-hidden">
               <div className="hidden md:grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-ink-400 border-b border-violet-400/15">
                 <span className="col-span-1">Rank</span>

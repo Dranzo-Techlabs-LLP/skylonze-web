@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function PredictPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Category | "All">("All");
   const [query, setQuery] = useState("");
@@ -19,6 +20,9 @@ export default function PredictPage() {
       .then(({ markets }) => setMarkets(markets))
       .catch(() => {})
       .finally(() => setLoading(false));
+    apiGet<{ categories: Category[] }>("/api/categories")
+      .then(({ categories }) => setCats(categories))
+      .catch(() => {});
   }, []);
 
   const filtered = useMemo(() => {
@@ -48,6 +52,7 @@ export default function PredictPage() {
           onQueryChange={setQuery}
           sort={sort}
           onSortChange={setSort}
+          categories={cats}
         />
 
         <div className="mt-8">

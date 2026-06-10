@@ -9,6 +9,7 @@ import { SkyCoin } from "@/components/SkyCoin";
 import { formatSky } from "@/lib/utils";
 import { apiGet } from "@/lib/client";
 import type { LeaderRow } from "@/lib/leaderboard";
+import { ReportUserButton } from "@/components/ReportUserModal";
 
 const tones = { Oracle: "violet", Sage: "pink", Analyst: "cyan", Rookie: "neutral" } as const;
 
@@ -96,6 +97,7 @@ export default function LeaderboardPage() {
                         <p className="truncate text-sm font-medium">{u.name}</p>
                         <p className="truncate text-[11px] text-ink-400">@{u.handle}</p>
                       </div>
+                      <ReportUserButton handle={u.handle} />
                     </div>
                     <span className="col-span-4 md:col-span-2 md:text-right text-xs">
                       <span className="md:hidden text-ink-400">Profit · </span>

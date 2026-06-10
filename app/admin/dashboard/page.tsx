@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Search, LogOut, ShieldCheck, Users, Coins, Plus, Minus,
   Ban, CheckCircle2, X, AlertCircle, Check, Gavel, TrendingUp,
-  Pencil, Trash2, Rocket, BadgeCheck, ShieldAlert,
+  Pencil, Trash2, Rocket, BadgeCheck, ShieldAlert, Flag, KeyRound,
 } from "lucide-react";
 import { SLogo } from "@/components/SLogo";
 import { Button } from "@/components/Button";
@@ -32,16 +32,25 @@ type AdminStartup = {
   raised: number; valuation: number; growth: number; founders: string;
   logoSeed: string; logoUrl?: string | null;
 };
+type AdminReport = {
+  id: number; reporter_id: number; reporter_handle?: string;
+  reported_handle: string; category: string; details: string | null;
+  status: "open" | "resolved"; created_at: string;
+};
 
 const blankMarket = { id: "", title: "", question: "", category: "Crypto", closes: "Dec 31, 2026", yes: 50, volume: 0, participants: 0, hot: false };
 const blankStartup = { id: "", name: "", pitch: "", sector: "", raised: 0, valuation: 0, growth: 0, founders: "", logoUrl: null as string | null };
 
 export default function AdminDashboard() {
-  const [tab, setTab] = useState<"users" | "markets" | "startups" | "site">("users");
+  const [tab, setTab] = useState<"users" | "markets" | "startups" | "reports" | "site">("users");
   const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<Me[]>([]);
   const [markets, setMarkets] = useState<AdminMarket[]>([]);
   const [startups, setStartups] = useState<AdminStartup[]>([]);
+  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [cats, setCats] = useState<string[]>([]);
+  const [newCat, setNewCat] = useState("");
+  const [newPw, setNewPw] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<Me | null>(null);
@@ -68,12 +77,72 @@ export default function AdminDashboard() {
     try { const { startups } = await apiGet<{ startups: AdminStartup[] }>("/api/admin/startups"); setStartups(startups); }
     catch { router.push("/admin"); } finally { setLoading(false); }
   }
-  useEffect(() => { loadUsers(); }, []);
+  async function loadReports() {
+    setLoading(true);
+    try { const { reports } = await apiGet<{ reports: AdminReport[] }>("/api/admin/reports"); setReports(reports); }
+    catch { router.push("/admin"); } finally { setLoading(false); }
+  }
+  async function loadCats() {
+    try { const { categories } = await apiGet<{ categories: string[] }>("/api/categories"); setCats(categories); }
+    catch { /* fall back to defaults */ }
+  }
+  useEffect(() => { loadUsers(); loadCats(); }, []);
   useEffect(() => {
-    if (tab === "markets") loadMarkets();
+    if (tab === "markets") { loadMarkets(); loadCats(); }
     if (tab === "startups") loadStartups();
+    if (tab === "reports") loadReports();
     if (tab === "site") loadSite();
   }, [tab]);
+
+  async function addCategory() {
+    const name = newCat.trim();
+    if (!name) return;
+    setBusy(true); setNote(null);
+    try {
+      const { categories } = await apiSend<{ categories: string[] }>("/api/admin/categories", "POST", { name });
+      setCats(categories); setNewCat("");
+      setNote({ k: "ok", m: `Category "${name}" added.` });
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+  async function removeCategory(name: string) {
+    if (!confirm(`Delete category "${name}"? Markets using it must be moved first.`)) return;
+    setBusy(true); setNote(null);
+    try {
+      const { categories } = await apiSend<{ categories: string[] }>(`/api/admin/categories/${encodeURIComponent(name)}`, "DELETE");
+      setCats(categories);
+      setNote({ k: "ok", m: `Category "${name}" deleted.` });
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+
+  async function resolveReport(r: AdminReport, status: "open" | "resolved") {
+    setBusy(true); setNote(null);
+    try {
+      await apiSend(`/api/admin/reports/${r.id}`, "PATCH", { status });
+      setReports((prev) => prev.map((x) => (x.id === r.id ? { ...x, status } : x)));
+      setNote({ k: "ok", m: status === "resolved" ? "Report marked resolved." : "Report reopened." });
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+
+  async function delUser(u: Me) {
+    if (!confirm(`PERMANENTLY delete @${u.handle} (${u.email})? All their predictions, transactions and investments are erased. This cannot be undone.`)) return;
+    setBusy(true); setNote(null);
+    try {
+      await apiSend(`/api/admin/users/${u.id}`, "DELETE");
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      setActive(null);
+      setNote({ k: "ok", m: `@${u.handle} deleted.` });
+    } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+
+  async function resetPassword(u: Me) {
+    if (!newPw) { setNote({ k: "err", m: "Enter a new password first." }); return; }
+    await act(u.id, { action: "password", newPassword: newPw }, `Password reset for @${u.handle}.`);
+    setNewPw("");
+  }
 
   async function loadSite() {
     try {
@@ -196,7 +265,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex gap-2">
-          {(["users", "markets", "startups", "site"] as const).map((t) => (
+          {(["users", "markets", "startups", "reports", "site"] as const).map((t) => (
             <button key={t} onClick={() => { setTab(t); setNote(null); }}
               className={`h-9 rounded-full px-4 text-xs font-medium capitalize transition ${tab === t ? "bg-gradient-to-r from-violet-600 to-neon-pink text-white shadow-glow" : "border border-violet-400/20 text-ink-300 hover:text-white"}`}>
               {t}
@@ -254,8 +323,37 @@ export default function AdminDashboard() {
         {/* MARKETS */}
         {tab === "markets" && (
           <>
+            {/* Category manager */}
+            <div className="glass rounded-2xl p-4">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-ink-400">Prediction categories</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {(cats.length ? cats : categories).map((c) => (
+                  <span key={c} className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-white/[0.04] px-3 py-1.5 text-xs">
+                    {c}
+                    <button onClick={() => removeCategory(c)} className="text-ink-400 hover:text-danger" aria-label={`Delete category ${c}`}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <form
+                  onSubmit={(e) => { e.preventDefault(); addCategory(); }}
+                  className="inline-flex items-center gap-2"
+                >
+                  <input
+                    value={newCat}
+                    onChange={(e) => setNewCat(e.target.value)}
+                    placeholder="New category…"
+                    className="h-8 w-36 rounded-full border border-violet-400/25 bg-white/5 px-3 text-xs outline-none focus:border-violet-400/70"
+                  />
+                  <Button type="submit" size="sm" variant="secondary" disabled={busy || !newCat.trim()}>
+                    <Plus className="h-3.5 w-3.5" /> Add
+                  </Button>
+                </form>
+              </div>
+            </div>
+
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => setMarketForm({ ...blankMarket })}><Plus className="h-4 w-4" /> New market</Button>
+              <Button size="sm" onClick={() => setMarketForm({ ...blankMarket, category: (cats[0] ?? "Crypto") })}><Plus className="h-4 w-4" /> New market</Button>
             </div>
             <div className="glass rounded-3xl overflow-hidden">
               <div className="hidden md:grid grid-cols-12 px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-ink-400 border-b border-violet-400/15">
@@ -322,6 +420,54 @@ export default function AdminDashboard() {
           </>
         )}
 
+        {/* REPORTS */}
+        {tab === "reports" && (
+          <div className="glass rounded-3xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-violet-400/15 px-5 py-4">
+              <h3 className="font-display text-lg font-semibold inline-flex items-center gap-2">
+                <Flag className="h-5 w-5 text-danger" /> User reports
+              </h3>
+              <Badge tone="violet">{reports.filter((r) => r.status === "open").length} open</Badge>
+            </div>
+            {loading ? (
+              <div className="p-10 text-center text-ink-400 text-sm">Loading…</div>
+            ) : reports.length === 0 ? (
+              <div className="p-10 text-center text-ink-400 text-sm">No reports yet.</div>
+            ) : (
+              <ul className="divide-y divide-violet-400/10">
+                {reports.map((r) => (
+                  <li key={r.id} className="grid grid-cols-1 md:grid-cols-12 items-start gap-3 px-5 py-4">
+                    <div className="md:col-span-5 min-w-0">
+                      <p className="text-sm font-medium">
+                        <span className="text-danger">@{r.reported_handle}</span>
+                        <span className="text-ink-400"> reported by </span>
+                        <span>@{r.reporter_handle ?? r.reporter_id}</span>
+                      </p>
+                      {r.details && <p className="mt-1 text-xs text-ink-300 break-words">{r.details}</p>}
+                      <p className="mt-1 text-[11px] text-ink-400">{new Date(r.created_at).toLocaleString()}</p>
+                    </div>
+                    <span className="md:col-span-2"><Badge tone="warn">{r.category.replace("_", " ")}</Badge></span>
+                    <span className="md:col-span-2">
+                      <Badge tone={r.status === "open" ? "danger" : "success"}>{r.status}</Badge>
+                    </span>
+                    <div className="md:col-span-3 flex md:justify-end gap-2">
+                      {r.status === "open" ? (
+                        <Button size="sm" variant="secondary" disabled={busy} onClick={() => resolveReport(r, "resolved")}>
+                          <Check className="h-4 w-4" /> Mark resolved
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => resolveReport(r, "open")}>
+                          Reopen
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* SITE */}
         {tab === "site" && (
           <SiteForm
@@ -373,12 +519,35 @@ export default function AdminDashboard() {
               <Button size="sm" variant="secondary" disabled={busy} onClick={() => act(active.id, { action: "adjust", amount: -Math.abs(Number(adj.amount || 0)), note: adj.note }, "Debited.")}><Minus className="h-4 w-4" /> Debit</Button>
             </div>
           </div>
-          <div className="mt-4 border-t border-violet-400/15 pt-4">
+          {/* Reset password */}
+          <div className="mt-4 border-t border-violet-400/15 pt-4 space-y-2">
+            <p className="text-[10px] uppercase tracking-wider text-ink-400 inline-flex items-center gap-1.5">
+              <KeyRound className="h-3.5 w-3.5 text-violet-300" /> Reset password
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                placeholder="New password (min 8, letters + numbers)"
+                className="h-10 flex-1 rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70"
+              />
+              <Button size="sm" variant="secondary" disabled={busy || !newPw} onClick={() => resetPassword(active)}>
+                <KeyRound className="h-4 w-4" /> Set
+              </Button>
+            </div>
+            <p className="text-[10px] text-ink-400">Share the new password with the user through a trusted channel; they can change it in Settings.</p>
+          </div>
+
+          <div className="mt-4 border-t border-violet-400/15 pt-4 space-y-2">
             {active.status === "active" ? (
               <Button size="sm" variant="outline" className="w-full text-danger border-danger/40" disabled={busy || active.role === "admin"} onClick={() => act(active.id, { action: "suspend" }, "User suspended.")}><Ban className="h-4 w-4" /> Suspend account</Button>
             ) : (
               <Button size="sm" variant="outline" className="w-full text-success border-success/40" disabled={busy} onClick={() => act(active.id, { action: "activate" }, "User reactivated.")}><CheckCircle2 className="h-4 w-4" /> Reactivate account</Button>
             )}
+            <Button size="sm" variant="outline" className="w-full text-danger border-danger/60" disabled={busy || active.role === "admin"} onClick={() => delUser(active)}>
+              <Trash2 className="h-4 w-4" /> Delete account permanently
+            </Button>
           </div>
         </Modal>
       )}
@@ -412,7 +581,7 @@ export default function AdminDashboard() {
                 <label className="text-[11px] uppercase tracking-wider text-ink-400">Category</label>
                 <select value={marketForm.category} onChange={(e) => setMarketForm({ ...marketForm, category: e.target.value })}
                   className="h-11 w-full rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70">
-                  {categories.map((c) => <option key={c} value={c} className="bg-bg-800">{c}</option>)}
+                  {(cats.length ? cats : categories).map((c) => <option key={c} value={c} className="bg-bg-800">{c}</option>)}
                 </select>
               </div>
               <Input label="Closes" value={marketForm.closes} onChange={(e) => setMarketForm({ ...marketForm, closes: e.target.value })} placeholder="Dec 31, 2026" />
@@ -472,13 +641,13 @@ function CloseBtn({ onClick }: { onClick: () => void }) {
 }
 
 const SITE_FIELDS: { key: string; label: string; hint: string }[] = [
-  { key: "volume", label: "Total Volume (SKY)", hint: "Empty = use computed (sum of all stakes)" },
-  { key: "activeMarkets", label: "Active Markets", hint: "Empty = total markets − resolved" },
-  { key: "users", label: "Users", hint: "Empty = count of role=user" },
-  { key: "predictors", label: "Predictors", hint: "Empty = distinct users with predictions" },
-  { key: "startups", label: "Startups", hint: "Empty = startups table count" },
-  { key: "resolved", label: "Resolved markets", hint: "Empty = market_resolutions count" },
-  { key: "winRate", label: "Win Rate %", hint: "Empty = won/(won+lost) × 100" },
+  { key: "volume", label: "Total Volume (SKY)", hint: "Added to live sum of all stakes" },
+  { key: "activeMarkets", label: "Active Markets", hint: "Added to live (markets − resolved)" },
+  { key: "users", label: "Users", hint: "Added to live registered-user count" },
+  { key: "predictors", label: "Predictors", hint: "Added to live distinct predictors" },
+  { key: "startups", label: "Startups", hint: "Added to live startups count" },
+  { key: "resolved", label: "Resolved markets", hint: "Added to live resolutions count" },
+  { key: "winRate", label: "Win Rate % boost", hint: "Added to live win rate, capped at 100%" },
 ];
 
 function SiteForm({
@@ -491,45 +660,79 @@ function SiteForm({
   onSave: (patch: Record<string, string>) => void;
 }) {
   const [draft, setDraft] = React.useState<Record<string, string>>({});
+  const [rate, setRate] = React.useState("");
   // sync defaults from server state
   React.useEffect(() => {
     const d: Record<string, string> = {};
     for (const f of SITE_FIELDS) d[f.key] = settings[`stats.${f.key}`] ?? "";
     setDraft(d);
+    setRate(settings["converter.rate"] ?? "");
   }, [settings]);
 
   return (
-    <div className="glass rounded-3xl p-5 sm:p-6 space-y-4">
-      <div>
-        <h2 className="font-display text-lg font-bold uppercase tracking-wide">Homepage stats</h2>
-        <p className="text-xs text-ink-400 mt-1">
-          Override the live computed numbers shown on the landing page (Hero + StatsBand).
-          Leave a field blank to use the real computed value.
-        </p>
+    <div className="space-y-6">
+      <div className="glass rounded-3xl p-5 sm:p-6 space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold uppercase tracking-wide">Homepage stats adjustments</h2>
+          <p className="text-xs text-ink-400 mt-1">
+            These amounts are <span className="text-violet-300 font-medium">added on top of</span> the live
+            computed numbers, so the landing page shows system-adjusted + real-time values together.
+            Leave a field blank for live value only.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {SITE_FIELDS.map((f) => (
+            <div key={f.key} className="space-y-1.5">
+              <label className="text-[11px] uppercase tracking-wider text-ink-400">{f.label}</label>
+              <input
+                type="number"
+                step="any"
+                value={draft[f.key] ?? ""}
+                onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
+                placeholder="+0 (live only)"
+                className="h-11 w-full rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70 tabular"
+              />
+              <p className="text-[10px] text-ink-400">{f.hint}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Button disabled={busy} onClick={() => onSave(draft)}>{busy ? "Saving…" : "Save adjustments"}</Button>
+          <Button variant="secondary" disabled={busy} onClick={() => {
+            const clear: Record<string, string> = {};
+            for (const f of SITE_FIELDS) clear[f.key] = "";
+            onSave(clear);
+          }}>Clear all adjustments</Button>
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {SITE_FIELDS.map((f) => (
-          <div key={f.key} className="space-y-1.5">
-            <label className="text-[11px] uppercase tracking-wider text-ink-400">{f.label}</label>
+
+      <div className="glass rounded-3xl p-5 sm:p-6 space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold uppercase tracking-wide">Coin conversion rate</h2>
+          <p className="text-xs text-ink-400 mt-1">
+            USD value of 1 SKY shown in the wallet Converter. Update anytime; users see it immediately.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1.5">
+            <label className="text-[11px] uppercase tracking-wider text-ink-400">USD per 1 SKY</label>
             <input
               type="number"
-              step="any"
-              value={draft[f.key] ?? ""}
-              onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
-              placeholder="(computed)"
-              className="h-11 w-full rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70 tabular"
+              step="0.0001"
+              min="0"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              placeholder="0.01 (default)"
+              className="h-11 w-44 rounded-xl border border-violet-400/25 bg-white/5 px-3 text-sm outline-none focus:border-violet-400/70 tabular"
             />
-            <p className="text-[10px] text-ink-400">{f.hint}</p>
           </div>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <Button disabled={busy} onClick={() => onSave(draft)}>{busy ? "Saving…" : "Save overrides"}</Button>
-        <Button variant="secondary" disabled={busy} onClick={() => {
-          const clear: Record<string, string> = {};
-          for (const f of SITE_FIELDS) clear[f.key] = "";
-          onSave(clear);
-        }}>Clear all overrides</Button>
+          <Button disabled={busy} onClick={() => onSave({ converterRate: rate } as any)}>
+            {busy ? "Saving…" : "Save rate"}
+          </Button>
+          <p className="text-xs text-ink-400 pb-3">
+            Preview: 1,000 SKY = ${((Number(rate) || 0.01) * 1000).toFixed(2)}
+          </p>
+        </div>
       </div>
     </div>
   );

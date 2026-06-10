@@ -1,11 +1,6 @@
-export type Category =
-  | "Crypto"
-  | "Stocks"
-  | "Sports"
-  | "Technology"
-  | "Startups"
-  | "Trending"
-  | "Politics";
+// Categories are admin-managed in the DB now; this stays a string alias
+// so new categories work without code changes.
+export type Category = string;
 
 export type Market = {
   id: string;
@@ -21,6 +16,7 @@ export type Market = {
   resolution?: string;
 };
 
+/** Static fallback — live list comes from /api/categories (admin-managed). */
 export const categories: Category[] = [
   "Crypto",
   "Stocks",

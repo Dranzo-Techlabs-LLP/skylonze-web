@@ -169,7 +169,7 @@ export function Hero() {
               </Link>
               <div className="ml-1 inline-flex items-center gap-2 text-xs text-ink-400">
                 <ShieldCheck className="h-4 w-4 text-success" />
-                <span>Virtual ecosystem · No real money required</span>
+                <span>Powered by SKY‑3030 · Virtual ecosystem</span>
               </div>
             </motion.div>
 

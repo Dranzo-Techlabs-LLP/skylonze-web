@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, TrendingUp, TrendingDown, Send, X, Check, AlertCircle, CreditCard, Lock } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, Send, X, Check, AlertCircle, CreditCard, Lock, ArrowRightLeft, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
 import { SkyCoin } from "@/components/SkyCoin";
@@ -36,6 +36,8 @@ export default function WalletPage() {
   const [send, setSend] = useState({ toHandle: "", amount: "" });
   const [sendNote, setSendNote] = useState<{ k: "ok" | "err"; m: string } | null>(null);
   const [sending, setSending] = useState(false);
+  const [rate, setRate] = useState<number | null>(null);
+  const [convertSky, setConvertSky] = useState("1000");
 
   async function load() {
     try {
@@ -48,7 +50,10 @@ export default function WalletPage() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    apiGet<{ rate: number }>("/api/converter").then(({ rate }) => setRate(rate)).catch(() => {});
+  }, []);
 
   async function submitSend(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +121,54 @@ export default function WalletPage() {
               <p className="text-[11px] text-ink-400">{s.sub}</p>
             </div>
           ))}
+        </div>
+
+        {/* Converter — SKY → USD */}
+        <div className="lg:col-span-3 glass rounded-3xl p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold inline-flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-violet-300" /> Converter
+            </h3>
+            <Badge tone="cyan">1 SKY = ${rate === null ? "—" : rate.toFixed(4)}</Badge>
+          </div>
+          <p className="mt-1 text-xs text-ink-400">
+            See the USD value of your earned SKY‑3030 at the current platform conversion rate.
+          </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-3 items-end">
+            <div className="space-y-1.5">
+              <label htmlFor="conv-sky" className="text-[11px] uppercase tracking-wider text-ink-400">SKY amount</label>
+              <div className="flex items-center gap-2 rounded-xl border border-violet-400/25 bg-white/5 px-3">
+                <SkyCoin size={20} spin={false} />
+                <input
+                  id="conv-sky" type="number" min={0} value={convertSky}
+                  onChange={(e) => setConvertSky(e.target.value)}
+                  className="h-11 w-full bg-transparent text-sm tabular outline-none"
+                />
+              </div>
+            </div>
+            <div className="hidden sm:flex justify-center pb-3">
+              <ArrowRightLeft className="h-5 w-5 text-ink-400" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] uppercase tracking-wider text-ink-400">USD value</label>
+              <div className="flex h-11 items-center gap-2 rounded-xl border border-violet-400/25 bg-gradient-to-r from-violet-500/10 to-neon-pink/10 px-3">
+                <DollarSign className="h-4 w-4 text-success" />
+                <span className="font-display text-lg font-bold tabular text-gradient">
+                  {rate === null ? "—" : ((Number(convertSky) || 0) * rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {me && rate !== null && (
+            <p className="mt-4 rounded-2xl border border-violet-400/15 bg-white/[0.03] px-4 py-3 text-sm text-ink-200">
+              Your balance <span className="font-display font-bold tabular">{formatBalance(me.sky_balance)} SKY</span> ≈{" "}
+              <span className="font-display font-bold tabular text-success">
+                ${(Number(me.sky_balance) * rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+              </span>
+            </p>
+          )}
         </div>
 
         {/* Transactions */}

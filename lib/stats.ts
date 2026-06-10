@@ -39,13 +39,18 @@ export async function getStats(): Promise<PlatformStats> {
     winRate: settled > 0 ? +((won / settled) * 100).toFixed(1) : 0,
   };
 
-  // Admin overrides via site_settings (empty string = use computed)
+  // Admin adjustments via site_settings are ADDED to the live computed
+  // values, so the homepage shows system-adjusted + real-time together.
+  // (Empty/absent = live value only.)
   const settings = await getAllSettings();
   for (const k of STAT_KEYS) {
     const v = settings[`stats.${k}`];
     if (v !== undefined && v !== "") {
       const n = Number(v);
-      if (!Number.isNaN(n)) (computed as any)[k] = n;
+      if (!Number.isNaN(n)) {
+        const combined = (computed as any)[k] + n;
+        (computed as any)[k] = k === "winRate" ? Math.min(100, +combined.toFixed(1)) : combined;
+      }
     }
   }
   return computed;

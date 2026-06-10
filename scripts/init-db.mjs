@@ -116,6 +116,8 @@ const COLUMN_ADDS = [
   { table: "users", column: "verify_expires", ddl: "ALTER TABLE users ADD COLUMN verify_expires DATETIME DEFAULT NULL" },
   { table: "users", column: "avatar_url", ddl: "ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL" },
   { table: "startups", column: "logo_url", ddl: "ALTER TABLE startups ADD COLUMN logo_url VARCHAR(255) DEFAULT NULL" },
+  { table: "users", column: "streak_count", ddl: "ALTER TABLE users ADD COLUMN streak_count INT NOT NULL DEFAULT 0" },
+  { table: "users", column: "last_streak_at", ddl: "ALTER TABLE users ADD COLUMN last_streak_at DATE DEFAULT NULL" },
 ];
 
 const EXTRA_TABLES = [
@@ -135,6 +137,23 @@ const EXTRA_TABLES = [
     INDEX idx_si_user (user_id),
     INDEX idx_si_startup (startup_id),
     CONSTRAINT fk_si_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+  `CREATE TABLE IF NOT EXISTS reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reporter_id INT NOT NULL,
+    reported_handle VARCHAR(60) NOT NULL,
+    category VARCHAR(30) NOT NULL DEFAULT 'other',
+    details VARCHAR(1000) DEFAULT NULL,
+    status ENUM('open','resolved') NOT NULL DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_rep_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+  `CREATE TABLE IF NOT EXISTS categories (
+    name VARCHAR(40) PRIMARY KEY,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 ];
 
@@ -262,6 +281,16 @@ if (sc[0].n === 0) {
     i++;
   }
   console.log(`Seeded ${SEED_STARTUPS.length} startups`);
+}
+
+// Seed default prediction categories (only when empty)
+const [catCount] = await c.query("SELECT COUNT(*) n FROM categories");
+if (catCount[0].n === 0) {
+  const defaults = ["Crypto", "Stocks", "Sports", "Technology", "Startups", "Trending", "Politics"];
+  for (let i = 0; i < defaults.length; i++) {
+    await c.query("INSERT INTO categories (name, sort_order) VALUES (?,?)", [defaults[i], i]);
+  }
+  console.log(`Seeded ${defaults.length} categories`);
 }
 
 await c.end();

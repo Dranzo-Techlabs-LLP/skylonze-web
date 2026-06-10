@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { categories, type Category } from "@/lib/data";
+import { categories as defaultCategories, type Category } from "@/lib/data";
 
 export function MarketFilters({
   active,
@@ -11,6 +11,7 @@ export function MarketFilters({
   onQueryChange,
   sort,
   onSortChange,
+  categories,
 }: {
   active: Category | "All";
   onChange: (c: Category | "All") => void;
@@ -18,8 +19,9 @@ export function MarketFilters({
   onQueryChange: (s: string) => void;
   sort: "volume" | "yes" | "participants";
   onSortChange: (s: "volume" | "yes" | "participants") => void;
+  categories?: Category[];
 }) {
-  const tabs: (Category | "All")[] = ["All", ...categories];
+  const tabs: (Category | "All")[] = ["All", ...(categories?.length ? categories : defaultCategories)];
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

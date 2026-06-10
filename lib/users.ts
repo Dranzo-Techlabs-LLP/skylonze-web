@@ -16,6 +16,8 @@ export type DbUser = {
   bonus_granted: number;
   verify_token_hash: string | null;
   verify_expires: string | null;
+  streak_count: number;
+  last_streak_at: string | null;
   created_at: string;
 };
 
@@ -172,4 +174,16 @@ export async function adminSetVerified(userId: number, verified: boolean, bonus:
   if (verified) return verifyAndGrantBonus(userId, bonus);
   await query("UPDATE users SET email_verified=0 WHERE id=?", [userId]);
   return findById(userId);
+}
+
+/**
+ * Permanently delete a user account. FK cascades remove their predictions,
+ * transactions, and startup investments; reports they filed are kept (the
+ * reporter_id has no FK) for audit. Admin accounts cannot be deleted.
+ */
+export async function deleteUser(userId: number) {
+  const user = await findById(userId);
+  if (!user) throw new Error("User not found.");
+  if (user.role === "admin") throw new Error("Admin accounts cannot be deleted.");
+  await pool.query("DELETE FROM users WHERE id=?", [userId]);
 }

@@ -62,7 +62,7 @@ export default function DashboardPage() {
           { label: "SKY balance", value: user ? formatBalance(user.sky_balance) : "—", sub: "available", coin: true },
           { label: "Open positions", value: String(summary.open), sub: `${formatSky(summary.staked)} staked`, icon: Target },
           { label: "Potential payout", value: formatSky(summary.potential), sub: "if all win", icon: TrendingUp },
-          { label: "Rank", value: summary.open > 0 ? "Unranked" : "New", sub: "Season 01", icon: Trophy },
+          { label: "Daily streak", value: user ? `${user.streak_count || 0}d` : "—", sub: "log in daily for bonus SKY", icon: Trophy },
         ].map((s) => (
           <div key={s.label} className="glass rounded-2xl p-5">
             <div className="flex items-center gap-2 text-violet-300">
@@ -127,7 +127,7 @@ export default function DashboardPage() {
           <div className="glass rounded-3xl p-5">
             <h3 className="font-display text-lg font-semibold">Daily streak</h3>
             <p className="text-xs text-ink-400">Make at least one forecast each day</p>
-            <div className="mt-4"><StreakStrip /></div>
+            <div className="mt-4"><StreakStrip streak={user?.streak_count ?? 0} /></div>
           </div>
           <LeaderboardPreview />
         </div>

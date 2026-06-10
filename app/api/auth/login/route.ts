@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { findByEmail, toPublic, verifyPassword } from "@/lib/users";
+import { findByEmail, findById, toPublic, verifyPassword } from "@/lib/users";
 import { setUserCookie } from "@/lib/auth";
+import { touchStreak } from "@/lib/streak";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,13 @@ export async function POST(req: Request) {
     }
 
     await setUserCookie({ uid: user.id, email: user.email, role: "user", handle: user.handle });
-    return NextResponse.json({ user: toPublic(user) });
+
+    // Daily login streak — at most once per calendar day.
+    let streakBonus: { amount: number; day: number } | null = null;
+    try { streakBonus = await touchStreak(user.id); } catch { /* never block login */ }
+    const fresh = streakBonus ? await findById(user.id) : user;
+
+    return NextResponse.json({ user: toPublic(fresh ?? user), streakBonus });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || "Login failed." }, { status: 500 });
   }

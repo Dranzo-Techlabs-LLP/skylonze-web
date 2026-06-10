@@ -20,7 +20,7 @@ export async function setSetting(k: string, v: string | null) {
   }
 }
 
-/** Allowed override keys for homepage stats. */
+/** Allowed adjustment keys for homepage stats (added to live values). */
 export const STAT_KEYS = [
   "volume",
   "activeMarkets",
@@ -31,3 +31,13 @@ export const STAT_KEYS = [
   "winRate",
 ] as const;
 export type StatKey = (typeof STAT_KEYS)[number];
+
+/** USD value of 1 SKY for the converter (admin-adjustable; default 0.01). */
+export const CONVERTER_RATE_KEY = "converter.rate";
+export const DEFAULT_CONVERTER_RATE = 0.01;
+
+export async function getConverterRate(): Promise<number> {
+  const settings = await getAllSettings();
+  const n = Number(settings[CONVERTER_RATE_KEY]);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_CONVERTER_RATE;
+}

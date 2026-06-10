@@ -12,6 +12,8 @@ export type Me = {
   avatar_url: string | null;
   email_verified: number;
   bonus_granted: number;
+  streak_count: number;
+  last_streak_at: string | null;
   created_at: string;
 };
 

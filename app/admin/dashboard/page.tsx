@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -50,6 +50,8 @@ export default function AdminDashboard() {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [cats, setCats] = useState<string[]>([]);
   const [newCat, setNewCat] = useState("");
+  const dragIdx = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
   const [newPw, setNewPw] = useState("");
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -115,13 +117,7 @@ export default function AdminDashboard() {
     } catch (err: any) { setNote({ k: "err", m: err.message }); }
     finally { setBusy(false); }
   }
-  async function moveCategory(name: string, dir: -1 | 1) {
-    const i = cats.indexOf(name);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= cats.length) return;
-    const prev = cats;
-    const next = [...cats];
-    [next[i], next[j]] = [next[j], next[i]];
+  async function persistOrder(next: string[], prev: string[]) {
     setCats(next); // optimistic
     setBusy(true); setNote(null);
     try {
@@ -130,6 +126,24 @@ export default function AdminDashboard() {
       setNote({ k: "ok", m: "Tab order updated." });
     } catch (err: any) { setCats(prev); setNote({ k: "err", m: err.message }); }
     finally { setBusy(false); }
+  }
+  function moveCategory(name: string, dir: -1 | 1) {
+    const i = cats.indexOf(name);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= cats.length) return;
+    const next = [...cats];
+    [next[i], next[j]] = [next[j], next[i]];
+    persistOrder(next, cats);
+  }
+  function dropCategory(toIdx: number) {
+    const from = dragIdx.current;
+    dragIdx.current = null;
+    setDragOver(null);
+    if (from === null || from === toIdx || from < 0 || from >= cats.length) return;
+    const next = [...cats];
+    const [moved] = next.splice(from, 1);
+    next.splice(toIdx, 0, moved);
+    persistOrder(next, cats);
   }
 
   async function resolveReport(r: AdminReport, status: "open" | "resolved") {
@@ -342,10 +356,18 @@ export default function AdminDashboard() {
             {/* Category manager */}
             <div className="glass rounded-2xl p-4">
               <p className="text-[10px] uppercase tracking-[0.18em] text-ink-400">Prediction categories</p>
-              <p className="mt-1 text-[11px] text-ink-400">Use the arrows to reorder how tabs appear on the Predict page. The “All” tab always stays first.</p>
+              <p className="mt-1 text-[11px] text-ink-400">Drag a category, or use the arrows, to reorder how tabs appear on the Predict page. The “All” tab always stays first.</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {(cats.length ? cats : categories).map((c, i) => (
-                  <span key={c} className="inline-flex items-center gap-1 rounded-full border border-violet-400/25 bg-white/[0.04] py-1 pl-1.5 pr-2.5 text-xs">
+                  <span
+                    key={c}
+                    draggable={cats.length > 0 && !busy}
+                    onDragStart={(e) => { dragIdx.current = i; e.dataTransfer.effectAllowed = "move"; }}
+                    onDragOver={(e) => { if (cats.length > 0 && dragIdx.current !== null) { e.preventDefault(); if (dragOver !== i) setDragOver(i); } }}
+                    onDrop={(e) => { e.preventDefault(); dropCategory(i); }}
+                    onDragEnd={() => { dragIdx.current = null; setDragOver(null); }}
+                    className={`inline-flex select-none items-center gap-1 rounded-full border bg-white/[0.04] py-1 pl-1.5 pr-2.5 text-xs transition ${cats.length > 0 ? "cursor-grab active:cursor-grabbing" : ""} ${dragOver === i ? "border-violet-400 ring-1 ring-violet-400/60" : "border-violet-400/25"}`}
+                  >
                     {cats.length > 0 && (
                       <>
                         <button onClick={() => moveCategory(c, -1)} disabled={busy || i === 0}

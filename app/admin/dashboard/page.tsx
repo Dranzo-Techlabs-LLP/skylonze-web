@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Search, LogOut, ShieldCheck, Users, Coins, Plus, Minus,
   Ban, CheckCircle2, X, AlertCircle, Check, Gavel, TrendingUp,
-  Pencil, Trash2, Rocket, BadgeCheck, ShieldAlert, Flag, KeyRound,
+  Pencil, Trash2, Rocket, BadgeCheck, ShieldAlert, Flag, KeyRound, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { SLogo } from "@/components/SLogo";
 import { Button } from "@/components/Button";
@@ -113,6 +113,22 @@ export default function AdminDashboard() {
       setCats(categories);
       setNote({ k: "ok", m: `Category "${name}" deleted.` });
     } catch (err: any) { setNote({ k: "err", m: err.message }); }
+    finally { setBusy(false); }
+  }
+  async function moveCategory(name: string, dir: -1 | 1) {
+    const i = cats.indexOf(name);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= cats.length) return;
+    const prev = cats;
+    const next = [...cats];
+    [next[i], next[j]] = [next[j], next[i]];
+    setCats(next); // optimistic
+    setBusy(true); setNote(null);
+    try {
+      const { categories } = await apiSend<{ categories: string[] }>("/api/admin/categories", "PATCH", { order: next });
+      setCats(categories);
+      setNote({ k: "ok", m: "Tab order updated." });
+    } catch (err: any) { setCats(prev); setNote({ k: "err", m: err.message }); }
     finally { setBusy(false); }
   }
 
@@ -326,10 +342,23 @@ export default function AdminDashboard() {
             {/* Category manager */}
             <div className="glass rounded-2xl p-4">
               <p className="text-[10px] uppercase tracking-[0.18em] text-ink-400">Prediction categories</p>
+              <p className="mt-1 text-[11px] text-ink-400">Use the arrows to reorder how tabs appear on the Predict page. The “All” tab always stays first.</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                {(cats.length ? cats : categories).map((c) => (
-                  <span key={c} className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-white/[0.04] px-3 py-1.5 text-xs">
-                    {c}
+                {(cats.length ? cats : categories).map((c, i) => (
+                  <span key={c} className="inline-flex items-center gap-1 rounded-full border border-violet-400/25 bg-white/[0.04] py-1 pl-1.5 pr-2.5 text-xs">
+                    {cats.length > 0 && (
+                      <>
+                        <button onClick={() => moveCategory(c, -1)} disabled={busy || i === 0}
+                          className="rounded-full p-0.5 text-ink-400 hover:text-white disabled:opacity-30" aria-label={`Move ${c} earlier`}>
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => moveCategory(c, 1)} disabled={busy || i === cats.length - 1}
+                          className="rounded-full p-0.5 text-ink-400 hover:text-white disabled:opacity-30" aria-label={`Move ${c} later`}>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                    <span className="px-0.5 font-medium">{c}</span>
                     <button onClick={() => removeCategory(c)} className="text-ink-400 hover:text-danger" aria-label={`Delete category ${c}`}>
                       <X className="h-3 w-3" />
                     </button>

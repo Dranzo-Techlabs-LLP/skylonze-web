@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -7,6 +7,7 @@ import { Mail, User, Lock, AtSign, ChevronRight, AlertCircle } from "lucide-reac
 import { AuthShell } from "@/components/AuthShell";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { Turnstile, turnstileConfigured } from "@/components/Turnstile";
 import { apiSend, type Me } from "@/lib/client";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -16,6 +17,10 @@ export default function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  // Anti-bot: honeypot field + form-render timestamp + optional captcha token.
+  const [company, setCompany] = useState(""); // honeypot — must stay empty
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const mountedAt = useRef<number>(Date.now());
   const router = useRouter();
   const { setUser } = useAuth();
 
@@ -23,9 +28,15 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     if (!agree) { setError("Please accept the terms to continue."); return; }
+    if (turnstileConfigured && !captcha) { setError("Please complete the captcha."); return; }
     setBusy(true);
     try {
-      const { user } = await apiSend<{ user: Me }>("/api/auth/signup", "POST", form);
+      const { user } = await apiSend<{ user: Me }>("/api/auth/signup", "POST", {
+        ...form,
+        company,
+        formTime: Date.now() - mountedAt.current,
+        turnstileToken: captcha,
+      });
       setUser(user);
       setOk(true);
       router.push("/dashboard");
@@ -42,6 +53,16 @@ export default function SignupPage() {
       subtitle="Get 500 SKY-3030 to start forecasting in seconds."
     >
       <form className="space-y-4" onSubmit={submit}>
+        {/* Honeypot — visually hidden; bots that auto-fill every field trip it. */}
+        <div aria-hidden className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden" style={{ opacity: 0 }}>
+          <label>
+            Company
+            <input
+              type="text" name="company" tabIndex={-1} autoComplete="off"
+              value={company} onChange={(e) => setCompany(e.target.value)}
+            />
+          </label>
+        </div>
         <Input
           label="Full name" name="name" autoComplete="name" required
           value={form.name}
@@ -72,6 +93,8 @@ export default function SignupPage() {
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 accent-violet-500" />
           <span>I agree to the SKYLONZE terms and acknowledge SKY-3030 is a virtual ecosystem currency.</span>
         </label>
+
+        {turnstileConfigured && <Turnstile onToken={setCaptcha} />}
 
         {error && (
           <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} role="alert"

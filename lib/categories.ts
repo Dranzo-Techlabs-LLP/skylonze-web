@@ -20,3 +20,32 @@ export async function deleteCategory(name: string) {
   if (used[0].n > 0) throw new Error(`Cannot delete: ${used[0].n} market(s) use this category.`);
   await pool.query("DELETE FROM categories WHERE name=?", [name]);
 }
+
+/**
+ * Persist a new tab order. Renumbers sort_order to match `order`; any known
+ * categories missing from `order` keep their relative order at the end, so the
+ * set can never drift. Returns the resulting list.
+ */
+export async function reorderCategories(order: string[]): Promise<string[]> {
+  const current = await listCategories();
+  const known = new Set(current);
+  const seen = new Set<string>();
+  const final: string[] = [];
+  for (const n of order) if (known.has(n) && !seen.has(n)) { final.push(n); seen.add(n); }
+  for (const n of current) if (!seen.has(n)) final.push(n);
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (let i = 0; i < final.length; i++) {
+      await conn.query("UPDATE categories SET sort_order=? WHERE name=?", [i + 1, final[i]]);
+    }
+    await conn.commit();
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+  return listCategories();
+}
